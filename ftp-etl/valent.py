@@ -204,10 +204,6 @@ def _process_product(product_code, product_name):
         product_obj = _create_product(product_code, product_name)
     return product_obj
 
-
-product_code = "P003"
-
-
 def _get_product(product_code):
     product_obj = None
     product_collection = key_mappings['product']['collection']
@@ -220,7 +216,6 @@ def _get_product(product_code):
     response = requests.get(product_url, params=params, headers=headers)
     if response.status_code == 200:
         response = response.json()
-        print(response['data'])
         data = response['data']
         if len(data):
             product_obj = data[0]
@@ -269,13 +264,12 @@ def _get_production_order(production_order_number):
     production_order_obj = None
     production_order_collection = key_mappings['production_order']['collection']
     production_order_number_id = key_mappings['production_order']['property']['production_order_number']
-    production_order_url = f"{url}/partial?collection={production_order_collection}&filters=%7B%22op%22%3A%22AND%22%2C%22fields%22%3A%5B%7B%22field%22%3A%22searchable.{production_order_number_id}%22%2C%22op%22%3A%22EQ%22%2C%22values%22%3A%5B%22{production_order_number}%22%5D%7D%5D%7D"
+    production_order_url = f"{url}/partial"
     params = {
         'collection': {production_order_collection},
-        'filters': json.dumps({"op": "AND", "fields": [{"field": f"searchable.{production_order_number_id}", "op": "EQ",
-                                                        "values": [f"{production_order_number}"]}]})
+        'filters': _build_search_filter(production_order_number_id, production_order_number)
     }
-    response = requests.get(production_order_url, headers=headers)
+    response = requests.get(production_order_url, params=params, headers=headers)
     if response.status_code == 200:
         response = response.json()
         data = response['data']
@@ -329,8 +323,12 @@ def _get_batch(batch_number):
     batch_obj = None
     batch_collection = key_mappings['batch']['collection']
     batch_number_id = key_mappings['batch']['property']['batch_number']
-    product_url = f"{url}/partial?collection={batch_collection}&filters=%7B%22op%22%3A%22AND%22%2C%22fields%22%3A%5B%7B%22field%22%3A%22searchable.{batch_number_id}%22%2C%22op%22%3A%22EQ%22%2C%22values%22%3A%5B%22{batch_number}%22%5D%7D%5D%7D"
-    response = requests.get(product_url, headers=headers)
+    batch_url = f"{url}/partial"
+    params = {
+        'collection': {batch_collection},
+        'filters': _build_search_filter(batch_number_id, batch_number)
+    }
+    response = requests.get(batch_url, params=params, headers=headers)
     if response.status_code == 200:
         response = response.json()
         data = response['data']
@@ -381,7 +379,7 @@ def _build_search_filter(key, value):
 # scheduled_start = "1698949800"
 # scheduled_end = "1699122600"
 # batch_number = "B002"
-
+#
 # product_obj = _process_product(product_code, product_name)
 # print(product_obj)
 # production_order_obj = _process_production_order(production_order_number, product_name, scheduled_start, scheduled_end, product_obj)
@@ -392,4 +390,3 @@ def _build_search_filter(key, value):
 
 # lambda_handler(None, None)
 
-_get_product(product_code)
