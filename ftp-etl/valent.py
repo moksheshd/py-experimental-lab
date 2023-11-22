@@ -1,4 +1,5 @@
 import json
+import os
 import urllib.parse
 from datetime import datetime
 
@@ -6,6 +7,7 @@ import boto3
 import paramiko
 import requests
 
+DEBUG = False
 # SFTP connection details
 HOST = 'sftpval.valent.com'
 USERNAME = 'SAPEBRQA'
@@ -13,8 +15,8 @@ PASSWORD = 'X3Wmbnde4we'
 REMOTE_DIR = 'Outbound'
 
 dynamodb = boto3.client('dynamodb')
-url = 'https://api.valent.uat.platform.leucinetech.com/v1/objects'
-token = 'eyJhbGciOiJIUzUxMiJ9.eyJsYXN0TmFtZSI6IkwiLCJvcmdhbmlzYXRpb25JZCI6MTYxNzYyNTQwMSwicm9sZXMiOlt7ImlkIjoiMiIsIm5hbWUiOiJGQUNJTElUWV9BRE1JTiJ9XSwiZW1wbG95ZWVJZCI6IkwtZmFjaWxpdHkuYWRtaW4uMDEiLCJoYXNTZXRDaGFsbGVuZ2VRdWVzdGlvbiI6dHJ1ZSwiZmlyc3ROYW1lIjoiUHVzaHBhIiwiaWQiOjE2MTc2MjU0MDUsImZhY2lsaXR5SWRzIjpbMTYxNjM2NzgwNCwxNjE2MzY3ODAxXSwic2VydmljZUlkIjoiYzZkODI4NWI3MmE4NGVmYjhmYmQ2MDhjN2NhZGE0ODQiLCJmYWNpbGl0aWVzIjpbeyJpZCI6IjE2MTYzNjc4MDEiLCJuYW1lIjoiVW5pdCAxIn0seyJpZCI6IjE2MTYzNjc4MDQiLCJuYW1lIjoiVW5pdCA0In1dLCJjdXJyZW50RmFjaWxpdHlJZCI6MTYxNjM2NzgwMSwicm9sZU5hbWVzIjpbIkZBQ0lMSVRZX0FETUlOIl0sImVtYWlsIjoiZmEuMDFAbWFpbGluYXRvci5jb20iLCJqdGkiOiJjMjJlNDAwNTliNzc0OGZiYTZiMjU2ZmIyN2FhYzVkNCIsInVzZXJuYW1lIjoiZmFjaWxpdHkuYWRtaW4uMDEiLCJzdWIiOiJmYWNpbGl0eS5hZG1pbi4wMSIsImlhdCI6MTY5OTAyMTA0MiwiZXhwIjoxNzA3NTc0NjQyfQ.PN7HSmKagw6s5gybQhHTQ5GdMDfvIb3Dh0Ue2lXqT-cJPOwHxoEh0DyNfNa1prfqEAb3YbfOOiwodrIegpVKMw'
+url = 'https://api.valent.demo.platform.leucinetech.com/v1/objects'
+token = 'eyJhbGciOiJIUzUxMiJ9.eyJsYXN0TmFtZSI6IiIsIm9yZ2FuaXNhdGlvbklkIjoxNjE3NjI1NDAxLCJyb2xlcyI6W3siaWQiOiIxIiwibmFtZSI6IkFDQ09VTlRfT1dORVIifV0sImVtcGxveWVlSWQiOiJFVEwwMDEiLCJoYXNTZXRDaGFsbGVuZ2VRdWVzdGlvbiI6dHJ1ZSwiZmlyc3ROYW1lIjoiRVRMIiwiaWQiOjQyNjc0ODYzNjI4ODY5NjMyMCwiZmFjaWxpdHlJZHMiOlstMSwxNjE2MzY3ODAzLDE2MTYzNjc4MDIsMTYxNjM2NzgwMV0sInNlcnZpY2VJZCI6ImM2ZDgyODViNzJhODRlZmI4ZmJkNjA4YzdjYWRhNDg0IiwiZmFjaWxpdGllcyI6W3siaWQiOiItMSIsIm5hbWUiOiJHbG9iYWwgUG9ydGFsIn0seyJpZCI6IjE2MTYzNjc4MDEiLCJuYW1lIjoiVU5JVC0xIn0seyJpZCI6IjE2MTYzNjc4MDIiLCJuYW1lIjoiVU5JVC0yIn0seyJpZCI6IjE2MTYzNjc4MDMiLCJuYW1lIjoiVU5JVC0zIn1dLCJjdXJyZW50RmFjaWxpdHlJZCI6MTYxNjM2NzgwMSwicm9sZU5hbWVzIjpbIkFDQ09VTlRfT1dORVIiXSwiZW1haWwiOiJldGxAbWFpbGluYXRvci5jb20iLCJqdGkiOiIzZDUyZmMxZDJhZWI0Y2UxODEwNjMxMWEyMWZlMWJiZiIsInVzZXJuYW1lIjoiZXRsIiwic3ViIjoiZXRsIiwiaWF0IjoxNzAwNjYzNTM5LCJleHAiOjE3MDkyMTcxMzl9.H38fVDmZFXz-DyxaxFyDCrgVNugd2Q3F4S9gDqx5mhMxqpvRM2cxxptmBESNoVc1lyeMkyw87lqv3WouM5DHhg'
 headers = {
     'Authorization': f'Bearer {token}'
 }
@@ -28,7 +30,6 @@ key_mappings = {
             'product_code': '64ca640c7de0fe33130a99be'
         },
         'relation': {
-
         }
     },
     'production_order': {
@@ -54,8 +55,54 @@ key_mappings = {
         'relation': {
             'production_order': '64ccc013a8a5a262c13c8084'
         }
+    },
+    'material': {
+        'collection': 'materials',
+        'object_type_id': '65548c1e41913e1f1c6ecc42',
+        'property': {
+            'material_name': '65548c1e41913e1f1c6ecc43',
+            'material_code': '65548c1e41913e1f1c6ecc44'
+        },
+        'relation': {
+        }
+    },
+    'semi_finished_product': {
+        'collection': 'semi-finishedProducts',
+        'object_type_id': '6554965641913e1f1c6ecc57',
+        'property': {
+            'semi_finished_product_name': '6554965641913e1f1c6ecc58',
+            'semi_finished_product_code': '6554965641913e1f1c6ecc59'
+        },
+        'relation': {
+        }
+    },
+    'bom_material': {
+        'collection': 'bomMaterial',
+        'object_type_id': '655492ce41913e1f1c6ecc4a',
+        'property': {
+            'material_name': '655492ce41913e1f1c6ecc4b',
+            'bom_code': '655492ce41913e1f1c6ecc4c',
+            'target_quantity': '655492e041913e1f1c6ecc52',
+            'uom': '6554930641913e1f1c6ecc54',
+        },
+        'relation': {
+            'production_order': '6554932441913e1f1c6ecc55',
+            'material': '6554933641913e1f1c6ecc56',
+            'semi_finished_product': '6554967041913e1f1c6ecc5f',
+        }
     }
 }
+
+sfp_codes = ['15538', '15539', '16024', '16874', '16876', '18571', '20010', '20011', '22915', '23472', '25461', '25932',
+             '30445', '30446', '37388', '44493', '53422', '58392']
+
+def _display(message: str,  override=False):
+    if DEBUG or override:
+        print(message)
+
+
+def _build_search_filter(key, value):
+    return json.dumps({"op": "AND", "fields": [{"field": f"searchable.{key}", "op": "EQ", "values": [f"{value}"]}]})
 
 
 def lambda_handler(event, context):
@@ -104,57 +151,59 @@ def _file_exist(file_name):
 
 
 def process_files(sftp, unsynced_files):
-    for file in unsynced_files:
-        print("--------------------------------------")
-        file_path = f'{REMOTE_DIR}/{file}'
+    _display(f"Starting to Process {len(unsynced_files)} files: {unsynced_files}", True)
+    for filename in unsynced_files:
+        _display("")
+        _display(f"------------------- Processing file: {filename} -------------------", True)
+        is_valid_file_extension = os.path.splitext(filename)[1].lower() == '.csv'
+        if not is_valid_file_extension:
+            _display(f"Skipping file {filename} due to invalid file extension.")
+            continue
+        file_path = f'{REMOTE_DIR}/{filename}'
         with sftp.open(file_path) as f:
             content = f.read().decode('utf-8')
 
         # Extract data
-        data = extract_data(content)
-        product_code = data['product_code']
-        product_name = data['product_name']
-        production_order_number = data['production_order_number']
-        scheduled_start = data['scheduled_start']
-        scheduled_end = data['scheduled_end']
-        batch_number = data['batch_number']
+        data = _extract_data(content)
+        header = data['header']
+        components = data['components']
+        product_code = header['product_code']
+        product_name = header['product_name']
+        production_order_number = header['production_order_number']
+        scheduled_start = header['scheduled_start']
+        scheduled_end = header['scheduled_end']
+        batch_number = header['batch_number']
 
         product_obj = _process_product(product_code, product_name)
-        print(product_obj)
+        _display(product_obj)
+
         production_order_obj = _process_production_order(production_order_number, product_name, scheduled_start,
                                                          scheduled_end, product_obj)
-        print(production_order_obj)
+        _display(production_order_obj)
+
         batch_obj = _process_batch(batch_number, product_name, production_order_obj)
-        print(batch_obj)
+        _display(batch_obj)
 
-        # Mark file as synced (e.g. store its name in S3 or DynamoDB)
+        for component in components:
+            _display(f"Component: {component['bom_code']}")
+            bom_code = component['bom_code']
+            code = component['code']
+            name = component['name']
+            target_quantity = component['target_quantity']
+            uom = component['uom']
+            material_obj = None
+            semi_finished_product_obj = None
+            is_semi_finished_product = code in sfp_codes
+            if is_semi_finished_product:
+                semi_finished_product_obj = _process_semi_finished_product(code, name)
+                _display(semi_finished_product_obj)
+            else:
+                material_obj = _process_material(code, name)
+                _display(material_obj)
+            bom_material_obj = _process_bom_material(name, bom_code, target_quantity, uom, production_order_obj, material_obj,
+                                  semi_finished_product_obj)
+            _display(bom_material_obj, True)
 
-
-def extract_data(content):
-    # Split the content into lines and then by the pipe character
-    lines = [line.split("|") for line in content.strip().split("\n")]
-
-    # Extracting the data based on the corrected mapping from the header
-    # Assuming the first line is always the header
-    header_data = lines[0] if lines else []
-
-    product_name = header_data[3] if len(header_data) > 1 else None
-    product_code = header_data[2] if len(header_data) > 1 else None
-    production_order_number = header_data[1] if len(header_data) > 1 else None
-    scheduled_start = str(_get_epoch(header_data[9])) if len(header_data) > 1 else None
-    scheduled_end = str(_get_epoch(header_data[10])) if len(header_data) > 1 else None
-    batch_number = header_data[8] if len(header_data) > 1 else None
-
-    # Mapping the data based on provided Excel-like cell positions
-    extracted_data = {
-        'product_name': product_name,
-        'product_code': product_code,
-        'production_order_number': production_order_number,
-        'scheduled_start': scheduled_start,
-        'scheduled_end': scheduled_end,
-        'batch_number': batch_number
-    }
-    return extracted_data
 
 
 def _get_epoch(date_str, format='%m/%d/%Y'):
@@ -166,7 +215,7 @@ def _get_epoch(date_str, format='%m/%d/%Y'):
 
 def close_sftp_connection(sftp):
     sftp.close()
-    sftp.get_transport().close()
+    # sftp.get_transport().close()
 
 
 # content = """
@@ -196,13 +245,60 @@ def close_sftp_connection(sftp):
 # C|100024840|0130|A585026|Steam|26128.023|LBR||0010
 # C|100024840|0140|A585028|Waste Water|77550.066|GLL||0010
 # """
-# data = extract_data(content)
+
+def _extract_data(content):
+    # Split the content into lines and then by the pipe character
+    lines = [line.split("|") for line in content.strip().split("\n")]
+    header = {}
+    components = []
+
+    for line in lines:
+        if line[0] == "H":
+            # Extracting the data based on the corrected mapping from the header
+            # Assuming the first line is always the header
+            header_data = line
+            product_name = header_data[3] if len(header_data) > 1 else None
+            product_code = header_data[2] if len(header_data) > 1 else None
+            production_order_number = header_data[1] if len(header_data) > 1 else None
+            scheduled_start = str(_get_epoch(header_data[9])) if len(header_data) > 1 else None
+            scheduled_end = str(_get_epoch(header_data[10])) if len(header_data) > 1 else None
+            batch_number = header_data[8] if len(header_data) > 1 else None
+            header = {
+                'product_name': product_name,
+                'product_code': product_code,
+                'production_order_number': production_order_number,
+                'scheduled_start': scheduled_start,
+                'scheduled_end': scheduled_end,
+                'batch_number': batch_number
+            }
+        elif line[0] == "C":
+            component_data = line
+            bom_code = f"{component_data[1]}_{component_data[2]}"
+            code = component_data[3] if len(component_data) > 1 else None
+            name = component_data[4] if len(component_data) > 1 else None
+            target_quantity = component_data[5] if len(component_data) > 1 else None
+            uom = component_data[6] if len(component_data) > 1 else None
+
+            component = {
+                'bom_code': bom_code,
+                'code': code,
+                'name': name,
+                'target_quantity': target_quantity,
+                'uom': uom
+            }
+            components.append(component)
+    return {
+        'header': header,
+        'components': components
+    }
+
 
 def _process_product(product_code, product_name):
     product_obj = _get_product(product_code)
     if product_obj is None:
         product_obj = _create_product(product_code, product_name)
     return product_obj
+
 
 def _get_product(product_code):
     product_obj = None
@@ -369,24 +465,210 @@ def _create_batch(batch_number, product_name, production_order_obj):
     return batch_obj
 
 
-def _build_search_filter(key, value):
-    return json.dumps({"op": "AND", "fields": [{"field": f"searchable.{key}", "op": "EQ", "values": [f"{value}"]}]})
+def _process_material(material_code, material_name):
+    material_obj = _get_material(material_code)
+    if material_obj is None:
+        material_obj = _create_material(material_code, material_name)
+    return material_obj
 
 
-# product_code = "P003"
-# product_name = "P003"
-# production_order_number = "PO002"
+def _get_material(material_code):
+    material_obj = None
+    material_collection = key_mappings['material']['collection']
+    material_code_id = key_mappings['material']['property']['material_code']
+    params = {
+        'collection': {material_collection},
+        'filters': _build_search_filter(material_code_id, material_code)
+    }
+    material_url = f"{url}/partial"
+    response = requests.get(material_url, params=params, headers=headers)
+    if response.status_code == 200:
+        response = response.json()
+        data = response['data']
+        if len(data):
+            material_obj = data[0]
+    else:
+        print('Error:', response.status_code)
+        print('Error:', response.text)
+    return material_obj
+
+
+def _create_material(material_code, material_name):
+    material_obj = None
+    material_url = f"{url}"
+    data = {
+        'objectTypeId': key_mappings['material']['object_type_id'],
+        'properties': {
+            key_mappings['material']['property']['material_code']: material_code,
+            key_mappings['material']['property']['material_name']: material_name
+        }
+    }
+    response = requests.post(material_url, json=data, headers=headers)
+    if response.status_code == 200:
+        response = response.json()
+        data = response['data']
+        if len(data):
+            material_obj = {
+                'id': data['id'],
+                'collection': key_mappings['material']['collection'],
+                'externalId': data['externalId'],
+                'displayName': data['displayName']
+            }
+    else:
+        print('Error:', response.status_code)
+        print('Error:', response.text)
+    return material_obj
+
+
+def _process_semi_finished_product(semi_finished_product_code, semi_finished_product_name):
+    semi_finished_product_obj = _get_semi_finished_product(semi_finished_product_code)
+    if semi_finished_product_obj is None:
+        semi_finished_product_obj = _create_semi_finished_product(semi_finished_product_code,
+                                                                  semi_finished_product_name)
+    return semi_finished_product_obj
+
+
+def _get_semi_finished_product(semi_finished_product_code):
+    semi_finished_product_obj = None
+    semi_finished_product_collection = key_mappings['semi_finished_product']['collection']
+    semi_finished_product_code_id = key_mappings['semi_finished_product']['property']['semi_finished_product_code']
+    params = {
+        'collection': {semi_finished_product_collection},
+        'filters': _build_search_filter(semi_finished_product_code_id, semi_finished_product_code)
+    }
+    semi_finished_product_url = f"{url}/partial"
+    response = requests.get(semi_finished_product_url, params=params, headers=headers)
+    if response.status_code == 200:
+        response = response.json()
+        data = response['data']
+        if len(data):
+            semi_finished_product_obj = data[0]
+    else:
+        print('Error:', response.status_code)
+        print('Error:', response.text)
+    return semi_finished_product_obj
+
+
+def _create_semi_finished_product(semi_finished_product_code, semi_finished_product_name):
+    semi_finished_product_obj = None
+    semi_finished_product_url = f"{url}"
+    data = {
+        'objectTypeId': key_mappings['semi_finished_product']['object_type_id'],
+        'properties': {
+            key_mappings['semi_finished_product']['property']['semi_finished_product_code']: semi_finished_product_code,
+            key_mappings['semi_finished_product']['property']['semi_finished_product_name']: semi_finished_product_name
+        }
+    }
+    response = requests.post(semi_finished_product_url, json=data, headers=headers)
+    if response.status_code == 200:
+        response = response.json()
+        data = response['data']
+        if len(data):
+            semi_finished_product_obj = {
+                'id': data['id'],
+                'collection': key_mappings['semi_finished_product']['collection'],
+                'externalId': data['externalId'],
+                'displayName': data['displayName']
+            }
+    else:
+        print('Error:', response.status_code)
+        print('Error:', response.text)
+    return semi_finished_product_obj
+
+
+def _process_bom_material(material_name, bom_code, target_quantity, uom, production_order_obj, material_obj,
+                          semi_finished_product_obj):
+    bom_material_obj = _get_bom_material(bom_code)
+    if bom_material_obj is None:
+        bom_material_obj = _create_bom_material(material_name, bom_code, target_quantity, uom, production_order_obj,
+                                                material_obj, semi_finished_product_obj)
+    return bom_material_obj
+
+
+def _get_bom_material(bom_code):
+    bom_material_obj = None
+    bom_material_collection = key_mappings['bom_material']['collection']
+    bom_code_id = key_mappings['bom_material']['property']['bom_code']
+    bom_material_url = f"{url}/partial"
+    params = {
+        'collection': {bom_material_collection},
+        'filters': _build_search_filter(bom_code_id, bom_code)
+    }
+    response = requests.get(bom_material_url, params=params, headers=headers)
+    if response.status_code == 200:
+        response = response.json()
+        data = response['data']
+        if len(data):
+            bom_material_obj = data[0]
+    else:
+        print('Error:', response.status_code)
+    return bom_material_obj
+
+
+def _create_bom_material(material_name, bom_code, target_quantity, uom, production_order_obj, material_obj,
+                         semi_finished_product_obj):
+    bom_material_obj = None
+    bom_material_url = f"{url}"
+    data = {
+        'objectTypeId': key_mappings['bom_material']['object_type_id'],
+        'properties': {
+            key_mappings['bom_material']['property']['material_name']: material_name,
+            key_mappings['bom_material']['property']['bom_code']: bom_code,
+            key_mappings['bom_material']['property']['target_quantity']: target_quantity,
+            key_mappings['bom_material']['property']['uom']: uom,
+        },
+        'relations': {
+            key_mappings['bom_material']['relation']['production_order']: [production_order_obj],
+            key_mappings['bom_material']['relation']['material']: [material_obj] if material_obj is not None else None,
+            key_mappings['bom_material']['relation']['semi_finished_product']: [
+                semi_finished_product_obj] if semi_finished_product_obj is not None else None
+        }
+    }
+    response = requests.post(bom_material_url, json=data, headers=headers)
+    if response.status_code == 200:
+        response = response.json()
+        data = response['data']
+        if len(data):
+            bom_material_obj = {
+                'id': data['id'],
+                'collection': key_mappings['bom_material']['collection'],
+                'externalId': data['externalId'],
+                'displayName': data['displayName']
+            }
+    else:
+        print('Error:', response.status_code)
+        print('Error:', response.text)
+    return bom_material_obj
+
+# product_code = "P001"
+# product_name = "P001"
+# production_order_number = "PO001"
 # scheduled_start = "1698949800"
 # scheduled_end = "1699122600"
-# batch_number = "B002"
-#
+# batch_number = "B001"
+# material_code = "M001"
+# material_name = "M001"
+# semi_finished_product_code = "SFP001"
+# semi_finished_product_name = "SFP001"
+# bom_code = "123"
+# target_quantity = "123.60"
+# uom = "KGS"
+# #
 # product_obj = _process_product(product_code, product_name)
-# print(product_obj)
+# # print(product_obj)
 # production_order_obj = _process_production_order(production_order_number, product_name, scheduled_start, scheduled_end, product_obj)
-# print(production_order_obj)
-# batch_obj = _process_batch(batch_number, product_name, production_order_obj)
-# print(batch_obj)
+# # print(production_order_obj)
+# # batch_obj = _process_batch(batch_number, product_name, production_order_obj)
+# # print(batch_obj)
+# material_obj = _process_material(material_code, material_name)
+# # print(material_obj)
+# # semi_finished_product_obj = _process_semi_finished_product(semi_finished_product_code, semi_finished_product_name)
+# # print(semi_finished_product_obj)
+# semi_finished_product_obj = None
+# bom_material_obj = _process_bom_material(material_name, bom_code, target_quantity, uom, production_order_obj, material_obj,semi_finished_product_obj)
+# print(bom_material_obj)
+# extrated_content = _extract_data(content)
+# print(extrated_content)
 
 
 # lambda_handler(None, None)
-
