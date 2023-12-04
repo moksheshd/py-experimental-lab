@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 
 import boto3
+import pandas as pd
 import paramiko
 import requests
 
@@ -20,7 +21,7 @@ INVENTORY_DIR = 'Inventory'
 
 dynamodb = boto3.client('dynamodb')
 url = 'https://api.valent.demo.platform.leucinetech.com/v1/objects'
-uat_token = 'eyJhbGciOiJIUzUxMiJ9.eyJsYXN0TmFtZSI6IiIsIm9yZ2FuaXNhdGlvbklkIjoxNjE3NjI1NDAxLCJyb2xlcyI6W3siaWQiOiIxIiwibmFtZSI6IkFDQ09VTlRfT1dORVIifV0sImVtcGxveWVlSWQiOiJCb3QwMSIsImhhc1NldENoYWxsZW5nZVF1ZXN0aW9uIjp0cnVlLCJmaXJzdE5hbWUiOiJMZXVjaW5lIEJvdCIsImlkIjo0Mjk5MjQzMTQ4NjM0NDM5NjgsImZhY2lsaXR5SWRzIjpbLTEsMTYxNjM2NzgwNCwxNjE2MzY3ODAzLDE2MTYzNjc4MDIsMTYxNjM2NzgwMV0sInNlcnZpY2VJZCI6ImM2ZDgyODViNzJhODRlZmI4ZmJkNjA4YzdjYWRhNDg0IiwiZmFjaWxpdGllcyI6W3siaWQiOiItMSIsIm5hbWUiOiJHbG9iYWwgUG9ydGFsIn0seyJpZCI6IjE2MTYzNjc4MDEiLCJuYW1lIjoiVW5pdCAxIn0seyJpZCI6IjE2MTYzNjc4MDIiLCJuYW1lIjoiVW5pdCAyIn0seyJpZCI6IjE2MTYzNjc4MDMiLCJuYW1lIjoiVW5pdCAzIn0seyJpZCI6IjE2MTYzNjc4MDQiLCJuYW1lIjoiVW5pdCA0In1dLCJjdXJyZW50RmFjaWxpdHlJZCI6MTYxNjM2NzgwMiwicm9sZU5hbWVzIjpbIkFDQ09VTlRfT1dORVIiXSwianRpIjoiMTFlOTk2Y2UyNzQ3NDJjZWFiZjI0ZmRjYThhNTczNWMiLCJ1c2VybmFtZSI6ImJvdDAxIiwic3ViIjoiYm90MDEiLCJpYXQiOjE3MDE0MjA1MDYsImV4cCI6MTcwOTk3NDEwNn0.ohOofJoIaSVNENpEmEGtCwGoTD9PwbKKvcuY3QcjMcaK0X5rE-vjyYnQJqzVRhcIYrizI8297DdtjaAwv17i0A'
+# uat_token = 'eyJhbGciOiJIUzUxMiJ9.eyJsYXN0TmFtZSI6IiIsIm9yZ2FuaXNhdGlvbklkIjoxNjE3NjI1NDAxLCJyb2xlcyI6W3siaWQiOiIxIiwibmFtZSI6IkFDQ09VTlRfT1dORVIifV0sImVtcGxveWVlSWQiOiJCb3QwMSIsImhhc1NldENoYWxsZW5nZVF1ZXN0aW9uIjp0cnVlLCJmaXJzdE5hbWUiOiJMZXVjaW5lIEJvdCIsImlkIjo0Mjk5MjQzMTQ4NjM0NDM5NjgsImZhY2lsaXR5SWRzIjpbLTEsMTYxNjM2NzgwNCwxNjE2MzY3ODAzLDE2MTYzNjc4MDIsMTYxNjM2NzgwMV0sInNlcnZpY2VJZCI6ImM2ZDgyODViNzJhODRlZmI4ZmJkNjA4YzdjYWRhNDg0IiwiZmFjaWxpdGllcyI6W3siaWQiOiItMSIsIm5hbWUiOiJHbG9iYWwgUG9ydGFsIn0seyJpZCI6IjE2MTYzNjc4MDEiLCJuYW1lIjoiVW5pdCAxIn0seyJpZCI6IjE2MTYzNjc4MDIiLCJuYW1lIjoiVW5pdCAyIn0seyJpZCI6IjE2MTYzNjc4MDMiLCJuYW1lIjoiVW5pdCAzIn0seyJpZCI6IjE2MTYzNjc4MDQiLCJuYW1lIjoiVW5pdCA0In1dLCJjdXJyZW50RmFjaWxpdHlJZCI6MTYxNjM2NzgwMiwicm9sZU5hbWVzIjpbIkFDQ09VTlRfT1dORVIiXSwianRpIjoiMTFlOTk2Y2UyNzQ3NDJjZWFiZjI0ZmRjYThhNTczNWMiLCJ1c2VybmFtZSI6ImJvdDAxIiwic3ViIjoiYm90MDEiLCJpYXQiOjE3MDE0MjA1MDYsImV4cCI6MTcwOTk3NDEwNn0.ohOofJoIaSVNENpEmEGtCwGoTD9PwbKKvcuY3QcjMcaK0X5rE-vjyYnQJqzVRhcIYrizI8297DdtjaAwv17i0A'
 demo_token = 'eyJhbGciOiJIUzUxMiJ9.eyJsYXN0TmFtZSI6IiIsIm9yZ2FuaXNhdGlvbklkIjoxNjE3NjI1NDAxLCJyb2xlcyI6W3siaWQiOiIxIiwibmFtZSI6IkFDQ09VTlRfT1dORVIifV0sImVtcGxveWVlSWQiOiJCb3QwMSIsImhhc1NldENoYWxsZW5nZVF1ZXN0aW9uIjp0cnVlLCJmaXJzdE5hbWUiOiJMZXVjaW5lIEJvdCIsImlkIjo0Mjk5MjIxNzc1NTA5ODMxNjgsImZhY2lsaXR5SWRzIjpbLTEsMTY0MzEwMzUwMywxNjQzMTAzNTAyLDE2NDMxMDM1MDEsMTYxNjM2NzgwNCwxNjE2MzY3ODAzLDE2MTYzNjc4MDIsMTYxNjM2NzgwMV0sInNlcnZpY2VJZCI6ImM2ZDgyODViNzJhODRlZmI4ZmJkNjA4YzdjYWRhNDg0IiwiZmFjaWxpdGllcyI6W3siaWQiOiItMSIsIm5hbWUiOiJHbG9iYWwgUG9ydGFsIn0seyJpZCI6IjE2NDMxMDM1MDIiLCJuYW1lIjoiTG9uZG9uIn0seyJpZCI6IjE2NDMxMDM1MDEiLCJuYW1lIjoiTmV3IFlvcmsifSx7ImlkIjoiMTY0MzEwMzUwMyIsIm5hbWUiOiJTeWRuZXkifSx7ImlkIjoiMTYxNjM2NzgwMSIsIm5hbWUiOiJVbml0IDEifSx7ImlkIjoiMTYxNjM2NzgwMiIsIm5hbWUiOiJVbml0IDIifSx7ImlkIjoiMTYxNjM2NzgwMyIsIm5hbWUiOiJVbml0IDMifSx7ImlkIjoiMTYxNjM2NzgwNCIsIm5hbWUiOiJVbml0IDQifV0sImN1cnJlbnRGYWNpbGl0eUlkIjoxNjE2MzY3ODAyLCJyb2xlTmFtZXMiOlsiQUNDT1VOVF9PV05FUiJdLCJqdGkiOiI2MDk3Y2IyZTU3OGQ0MzIzYTUzYTA5YzE4OWQzZjYxNyIsInVzZXJuYW1lIjoiYm90MDEiLCJzdWIiOiJib3QwMSIsImlhdCI6MTcwMTQyMDA2MywiZXhwIjoxNzA5OTczNjYzfQ.LPT6Y1WFj_SDvi7aSIeP6ukRBgkuXI-ufW_TEztPdGCtBYPOLsb5cg9UtYC0aNLryIfzodW0joL-G-ExYJjxrw'
 token = demo_token
 headers = {
@@ -157,6 +158,7 @@ def get_unsynced_files(sftp, directory: str, prefix: str):
     files = sftp.listdir(directory)
     # List to hold unsynced files
     unsynced_files = []
+    
 
     # Check each file against DynamoDB to see if it's been synced
     for file in files:
@@ -166,7 +168,8 @@ def get_unsynced_files(sftp, directory: str, prefix: str):
         except Exception as e:
             print(e)
             # Depending on your error policy, you might continue, return, or raise
-    return unsynced_files
+    # return unsynced_files
+    return ["INV_11302023.XLSX"]
 
 
 def _file_exist(file_name: str, prefix: str):
@@ -179,48 +182,52 @@ def _file_exist(file_name: str, prefix: str):
         return False
 
 def process_inventory_files(sftp, filenames):
-    # _display(f"Starting to Process {len(filenames)} files: {filenames}", True)
-    # for filename in filenames:
-    #     _display("")
-    #     _display(f"------------------- Processing file: {filename} -------------------", True)
-    #     is_valid_file_extension = os.path.splitext(filename)[1].lower() == '.xls'
-    #     if not is_valid_file_extension:
-    #         _display(f"Skipping file {filename} due to invalid file extension.")
-    #         continue
-    data = _extract_inventory_data(content)
-    for material_code in data:
-        material = data[material_code]
-        material_code = material['material_code']
-        material_name = material['material_name']
-        material_obj = _process_material(material_code, material_name)
-        lots = material['lots']
-        for lot in lots:
-            material_lot_number = lot['material_lot_number']
-            unrestricted_quantity = lot['unrestricted_quantity']
-            in_quality_inspection = lot['in_quality_inspection']
-            blocked = lot['blocked']
-            stk_in_transit = lot['stk_in_transit']
-            restricted_use = lot['restricted_use']
-            uom = lot['uom']
-            _process_material_lot(material_lot_number, material_name, unrestricted_quantity, in_quality_inspection, blocked, stk_in_transit, restricted_use, uom, material_obj)
-            break
-        break
-
+    _display(f"Starting to Process {len(filenames)} files: {filenames}", True)
+    for filename in filenames:
+        _display("")
+        _display(f"------------------- Processing file: {filename} -------------------", True)
+        valid_exentsions = {".xls", ".xlsx"}
+        is_valid_file_extension = os.path.splitext(filename)[1].lower() in valid_exentsions
+        if not is_valid_file_extension:
+            _display(f"Skipping file {filename} due to invalid file extension.")
+            continue
+        file_path = f'{INVENTORY_DIR}/{filename}'
+        with sftp.open(file_path) as f:
+            temp = pd.read_excel(f)
+        content = temp.to_csv(sep='|', index=False)
+        lines = [line.split("|") for line in content.strip().split("\n")[1:]]
+        data = _extract_inventory_data(lines)
+        for material_code in data:
+            material = data[material_code]
+            material_code = material['material_code']
+            material_name = material['material_name']
+            material_obj = _process_material(material_code, material_name)
+            _display(f"Material: {material_code}")
+            lots = material['lots']
+            for lot in lots:
+                material_lot_number = lot['material_lot_number']
+                unrestricted_quantity = lot['unrestricted_quantity']
+                in_quality_inspection = lot['in_quality_inspection']
+                blocked = lot['blocked']
+                stk_in_transit = lot['stk_in_transit']
+                restricted_use = lot['restricted_use']
+                uom = lot['uom']
+                material_lot_obj = _process_material_lot(material_lot_number, material_name, unrestricted_quantity, in_quality_inspection, blocked, stk_in_transit, restricted_use, uom, material_obj)
+                _display(material_lot_obj)
 
 
 def process_po_files(sftp, filenames):
-    # _display(f"Starting to Process {len(filenames)} files: {filenames}", True)
-    # for filename in filenames:
-    #     _display("")
-    #     _display(f"------------------- Processing file: {filename} -------------------", True)
-    #     is_valid_file_extension = os.path.splitext(filename)[1].lower() == '.csv'
-    #     if not is_valid_file_extension:
-    #         _display(f"Skipping file {filename} due to invalid file extension.")
-    #         continue
-    #     file_path = f'{PO_DIR}/{filename}'
-    #     with sftp.open(file_path) as f:
-    #         content = f.read().decode('utf-8')
-
+    _display(f"Starting to Process {len(filenames)} files: {filenames}", True)
+    for filename in filenames:
+        _display("")
+        _display(f"------------------- Processing file: {filename} -------------------", True)
+        is_valid_file_extension = os.path.splitext(filename)[1].lower() == '.csv'
+        if not is_valid_file_extension:
+            _display(f"Skipping file {filename} due to invalid file extension.")
+            continue
+        file_path = f'{PO_DIR}/{filename}'
+        with sftp.open(file_path) as f:
+            content = f.read().decode('utf-8')
         lines = [line.split("|") for line in content.strip().split("\n")]
         # Extract data
         data = _extract_po_data(lines)
@@ -283,50 +290,6 @@ def close_sftp_connection(sftp):
     # sftp.get_transport().close()
 
 
-content = """
-H|100053300|44493|BTI SOY FERMENTATION|ZP01|A511|90000.000|LTR|F444930175|07/23/2023|07/24/2023
-O|100053300|0020|07/23/2023|00:00:00|A5TS01|A511|Testing
-O|100053300|0040|07/23/2023|00:00:00|A5BT01|A511|Storage/Media Mix Tank/
-O|100053300|0050|07/23/2023|00:00:00|A5BT02|A511|Fermenters/ Harvest Tanks
-O|100053300|0060|07/23/2023|00:00:00|A5CG01|A511|Chilled Glycol
-O|100053300|0070|07/23/2023|00:00:00|A5PA01|A511|Process Air
-C|100053300|0010|21892|Corn Syrup, D.E. 95 Blend|0.000|KGM||0020
-C|100053300|0010|21892|Corn Syrup, D.E. 95 Blend|5940.000|KGM|282987W930|0020
-C|100053300|0030|27740|MAGNESIUM SULFATE CR|0.000|KGM||0020
-C|100053300|0030|27740|MAGNESIUM SULFATE CR|35.010|KGM|352345W900|0020
-C|100053300|0040|44380|MANGANESE SULFATE|0.000|KGM||0020
-C|100053300|0040|44380|MANGANESE SULFATE|5.500|KGM|346165W900|0020
-C|100053300|0040|44380|MANGANESE SULFATE|0.530|KGM|350958W900|0020
-C|100053300|0050|52142|OIL, SOY BEAN, EDIBLE|0.000|KGM||0020
-C|100053300|0050|52142|OIL, SOY BEAN, EDIBLE|135.990|KGM|334370W900|0020
-C|100053300|0060|58599|POTASSIUM PHOSPHATE|0.000|KGM||0020
-C|100053300|0060|58599|POTASSIUM PHOSPHATE|77.380|KGM|348549W900|0020
-C|100053300|0060|58599|POTASSIUM PHOSPHATE|22.610|KGM|350953W900|0020
-C|100053300|0080|62632|SOYBEAN FLOUR, SPECI|0.000|KGM||0020
-C|100053300|0080|62632|SOYBEAN FLOUR, SPECI|5940.000|KGM|355764W930|0020
-C|100053300|0090|64051|Sulfuric Acid 66 Deg Bulk Tanker|0.000|KGM||0020
-C|100053300|0090|64051|Sulfuric Acid 66 Deg Bulk Tanker|138.960|KGM|354733W930|0020
-C|100053300|0100|23189|Sodium Hydroxide 30-32%|0.000|KGM||0020
-C|100053300|0100|23189|Sodium Hydroxide 30-32%|1565.010|KGM|354743W930|0020
-C|100053300|0120|A585024|Electricity|19928.700|KWH||0020
-C|100053300|0130|A585026|Steam|87767.100|LBR||0020
-C|100053300|0140|A585028|Waste Water|6827.400|GLL||0020
-C|100053300|0150|23189|Sodium Hydroxide 30-32%|0.000|KGM||0020
-C|100053300|0150|23189|Sodium Hydroxide 30-32%|888.840|KGM|354743W930|0020
-C|100053300|0200|23265|DEFOAMER, INDSUTROL|0.000|KGM||0020
-C|100053300|0200|23265|DEFOAMER, INDSUTROL|45.900|KGM|319367W900|0020
-C|100053300|0220|A562011|SP3|146.700|KGM||0020
-C|100053300|0240|39860|FISH PROTEIN CONCENT,SEAPRO|0.000|KGM||0020
-C|100053300|0240|39860|FISH PROTEIN CONCENT,SEAPRO|1019.970|KGM|349838W900|0020
-C|100053300|0250|A585004|Stabicip|0.000|KGM||0020
-C|100053300|0250|A585004|Stabicip|42.300|KGM|353697W930|0020
-C|100053300|0280|59613|AMMONIA WATER, 18%|0.000|KGM||0020
-C|100053300|0280|59613|AMMONIA WATER, 18%|249.930|KGM|354737W930|0020
-C|100053300|0290|A562016|Synergex (US)|0.000|KGM||0020
-C|100053300|0290|A562016|Synergex (US)|4.950|KGM|336945W900|0020
-C|100053300|0300|A552143|NON-GMO OIL, SOYBEAN, EDIBLE|135.990|KGM||0020
-"""
-
 def _extract_po_data(lines):
     # Split the content into lines and then by the pipe character
     # lines = [line.split("|") for line in content.strip().split("\n")]
@@ -354,11 +317,12 @@ def _extract_po_data(lines):
             }
         elif line[0] == "C":
             component_data = line
-            bom_code = f"{component_data[1]}_{component_data[2]}"
             code = component_data[3] if len(component_data) > 1 else None
             name = component_data[4] if len(component_data) > 1 else None
             target_quantity = component_data[5] if len(component_data) > 1 else None
             uom = component_data[6] if len(component_data) > 1 else None
+            lot = component_data[7] if len(component_data) > 1 and component_data[7].strip() != "" else None
+            bom_code = f"{component_data[1]}_{component_data[2]}" if lot is None else f"{component_data[1]}_{component_data[2]}_{lot}"
 
             component = {
                 'bom_code': bom_code,
@@ -607,8 +571,8 @@ def _process_material_lot(material_lot_number, material_name, unrestricted_quant
     material_lot_obj = _get_material_lot(material_lot_number)
     if material_lot_obj is None:
         material_lot_obj = _create_material_lot(material_lot_number, material_name, unrestricted_quantity, in_quality_inspection, blocked, stk_in_transit, restricted_use, uom, material_obj)
-    else:
-        material_lot_obj = _update_material_lot(material_lot_obj, material_lot_number, material_name, unrestricted_quantity, in_quality_inspection, blocked, stk_in_transit, restricted_use, uom, material_obj)
+    # else:
+    #     material_lot_obj = _update_material_lot(material_lot_obj, material_lot_number, material_name, unrestricted_quantity, in_quality_inspection, blocked, stk_in_transit, restricted_use, uom, material_obj)
     return material_lot_obj
 
 
@@ -616,7 +580,7 @@ def _get_material_lot(material_lot_number):
     material_lot_obj = None
     material_lot_collection = key_mappings['material_lot']['collection']
     material_lot_number_id = key_mappings['material_lot']['property']['material_lot_number']
-    material_lot_url = f"{url}"
+    material_lot_url = f"{url}/partial"
     params = {
         'collection': {material_lot_collection},
         'filters': _build_search_filter(material_lot_number_id, material_lot_number)
@@ -629,6 +593,21 @@ def _get_material_lot(material_lot_number):
             material_lot_obj = data[0]
     else:
         print('Error:', response.status_code)
+        print('Error:', response)
+    return material_lot_obj
+
+def _get_particular_material_lot(material_lot_id):
+    material_lot_obj = None
+    material_lot_url = f"{url}/{material_lot_id}?collection={key_mappings['material_lot']['collection']}"
+    response = requests.get(material_lot_url, headers=headers)
+    if response.status_code == 200:
+        response = response.json()
+        data = response['data']
+        if len(data):
+            material_lot_obj = data[0]
+    else:
+        print('Error:', response.status_code)
+        print('Error:', response)
     return material_lot_obj
 
 
@@ -664,12 +643,13 @@ def _create_material_lot(material_lot_number, material_name, unrestricted_quanti
             }
     else:
         print('Error:', response.status_code)
-        print('Error:', response.text)
+        print('Error:', response)
     return material_lot_obj
 
 
 def _update_material_lot(material_lot_obj, material_lot_number, material_name, unrestricted_quantity, in_quality_inspection, blocked, stk_in_transit, restricted_use, uom, material_obj):
     # material_lot_obj = None
+    material_lot_obj = _get_particular_material_lot(material_lot_obj['id'])
     material_lot_url = f"{url}/{material_lot_obj['id']}"
     relations = material_lot_obj['relations']
     properties = material_lot_obj['properties']
@@ -677,10 +657,17 @@ def _update_material_lot(material_lot_obj, material_lot_number, material_name, u
     material_lot_number = temp['value']
     temp = next((property for property in properties if property["id"] == key_mappings['material_lot']['property']['material_name']), None)
     material_name = temp['value']
-    material_obj = next((relation for relation in relations if relation["id"] == key_mappings['material_lot']['relation']['material']), None)
-    # material_obj = {
-    #
-    # }
+    temp = next((relation for relation in relations if relation["id"] == key_mappings['material_lot']['relation']['material']), None)
+    target = temp['targets'][0]
+    material_obj = {
+        "collection": target['collection'],
+        "displayName": target['displayName'],
+        "externalId": f"(ID: {target['externalId']})",
+        "id": target['id'],
+        "label": target['displayName'],
+        "type": "OBJECTS",
+        "value": target['id'],
+    }
     data = {
         'objectTypeId': key_mappings['material_lot']['object_type_id'],
         'properties': {
@@ -710,7 +697,7 @@ def _update_material_lot(material_lot_obj, material_lot_number, material_name, u
             }
     else:
         print('Error:', response.status_code)
-        print('Error:', response.text)
+        print('Error:', response.content)
     return material_lot_obj
 
 
@@ -1050,33 +1037,75 @@ def _create_bom_material(material_name, bom_code, target_quantity, uom, producti
 # ;A511;3001;A585030;PROMEX 20S;KG;301321W900;99.996;0;0;0;0
 # """
 
-def _extract_inventory_data(content: str):
+content = """
+H|100053300|44493|BTI SOY FERMENTATION|ZP01|A511|90000.000|LTR|F444930175|07/23/2023|07/24/2023
+O|100053300|0020|07/23/2023|00:00:00|A5TS01|A511|Testing
+O|100053300|0040|07/23/2023|00:00:00|A5BT01|A511|Storage/Media Mix Tank/
+O|100053300|0050|07/23/2023|00:00:00|A5BT02|A511|Fermenters/ Harvest Tanks
+O|100053300|0060|07/23/2023|00:00:00|A5CG01|A511|Chilled Glycol
+O|100053300|0070|07/23/2023|00:00:00|A5PA01|A511|Process Air
+C|100053300|0010|21892|Corn Syrup, D.E. 95 Blend|0.000|KGM||0020
+C|100053300|0010|21892|Corn Syrup, D.E. 95 Blend|5940.000|KGM|282987W930|0020
+C|100053300|0030|27740|MAGNESIUM SULFATE CR|0.000|KGM||0020
+C|100053300|0030|27740|MAGNESIUM SULFATE CR|35.010|KGM|352345W900|0020
+C|100053300|0040|44380|MANGANESE SULFATE|0.000|KGM||0020
+C|100053300|0040|44380|MANGANESE SULFATE|5.500|KGM|346165W900|0020
+C|100053300|0040|44380|MANGANESE SULFATE|0.530|KGM|350958W900|0020
+C|100053300|0050|52142|OIL, SOY BEAN, EDIBLE|0.000|KGM||0020
+C|100053300|0050|52142|OIL, SOY BEAN, EDIBLE|135.990|KGM|334370W900|0020
+C|100053300|0060|58599|POTASSIUM PHOSPHATE|0.000|KGM||0020
+C|100053300|0060|58599|POTASSIUM PHOSPHATE|77.380|KGM|348549W900|0020
+C|100053300|0060|58599|POTASSIUM PHOSPHATE|22.610|KGM|350953W900|0020
+C|100053300|0080|62632|SOYBEAN FLOUR, SPECI|0.000|KGM||0020
+C|100053300|0080|62632|SOYBEAN FLOUR, SPECI|5940.000|KGM|355764W930|0020
+C|100053300|0090|64051|Sulfuric Acid 66 Deg Bulk Tanker|0.000|KGM||0020
+C|100053300|0090|64051|Sulfuric Acid 66 Deg Bulk Tanker|138.960|KGM|354733W930|0020
+C|100053300|0100|23189|Sodium Hydroxide 30-32%|0.000|KGM||0020
+C|100053300|0100|23189|Sodium Hydroxide 30-32%|1565.010|KGM|354743W930|0020
+C|100053300|0120|A585024|Electricity|19928.700|KWH||0020
+C|100053300|0130|A585026|Steam|87767.100|LBR||0020
+C|100053300|0140|A585028|Waste Water|6827.400|GLL||0020
+C|100053300|0150|23189|Sodium Hydroxide 30-32%|0.000|KGM||0020
+C|100053300|0150|23189|Sodium Hydroxide 30-32%|888.840|KGM|354743W930|0020
+C|100053300|0200|23265|DEFOAMER, INDSUTROL|0.000|KGM||0020
+C|100053300|0200|23265|DEFOAMER, INDSUTROL|45.900|KGM|319367W900|0020
+C|100053300|0220|A562011|SP3|146.700|KGM||0020
+C|100053300|0240|39860|FISH PROTEIN CONCENT,SEAPRO|0.000|KGM||0020
+C|100053300|0240|39860|FISH PROTEIN CONCENT,SEAPRO|1019.970|KGM|349838W900|0020
+C|100053300|0250|A585004|Stabicip|0.000|KGM||0020
+C|100053300|0250|A585004|Stabicip|42.300|KGM|353697W930|0020
+C|100053300|0280|59613|AMMONIA WATER, 18%|0.000|KGM||0020
+C|100053300|0280|59613|AMMONIA WATER, 18%|249.930|KGM|354737W930|0020
+C|100053300|0290|A562016|Synergex (US)|0.000|KGM||0020
+C|100053300|0290|A562016|Synergex (US)|4.950|KGM|336945W900|0020
+C|100053300|0300|A552143|NON-GMO OIL, SOYBEAN, EDIBLE|135.990|KGM||0020
+"""
+def _extract_inventory_data(lines):
     # Split the content into lines and then by the pipe character
-    lines = [line.split(";") for line in content.strip().split("\n")[1:]]
     materials = {}
-
     for line in lines:
-        material_code = line[3]
-        material_name = line[4]
-        lot = {
-            'material_lot_number': line[6],
-            'material_name': material_name,
-            'unrestricted_quantity': line[7],
-            'in_quality_inspection': line[8],
-            'blocked': line[9],
-            'stk_in_transit': line[10],
-            'restricted_use': line[11],
-            'uom': line[5],
-        }
+        material_code = line[2]
+        if material_code:
+            material_name = line[3]
+            lot = {
+                'material_lot_number': line[5],
+                'material_name': material_name,
+                'unrestricted_quantity': line[6],
+                'in_quality_inspection': line[8],
+                'blocked': line[10],
+                'stk_in_transit': line[12],
+                'restricted_use': line[14],
+                'uom': line[4],
+            }
 
-        if material_code not in materials:
-            materials[material_code] = {'material_code': material_code,'material_name': material_name, 'lots': []}
+            if material_code not in materials:
+                materials[material_code] = {'material_code': material_code,'material_name': material_name, 'lots': []}
 
-        # Append the lot details to the material's 'lots' list
-        materials[material_code]['lots'].append(lot)
+            # Append the lot details to the material's 'lots' list
+            materials[material_code]['lots'].append(lot)
 
     return materials
 
 # process_inventory_files(None,None)
-process_po_files(None, None)
-# lambda_handler(None, None)
+# process_po_files(None, None)
+lambda_handler(None, None)
