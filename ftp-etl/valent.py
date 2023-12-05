@@ -20,10 +20,12 @@ PO_DIR = 'Outbound'
 INVENTORY_DIR = 'Inventory'
 
 dynamodb = boto3.client('dynamodb')
-url = 'https://api.valent.demo.platform.leucinetech.com/v1/objects'
-# uat_token = 'eyJhbGciOiJIUzUxMiJ9.eyJsYXN0TmFtZSI6IiIsIm9yZ2FuaXNhdGlvbklkIjoxNjE3NjI1NDAxLCJyb2xlcyI6W3siaWQiOiIxIiwibmFtZSI6IkFDQ09VTlRfT1dORVIifV0sImVtcGxveWVlSWQiOiJCb3QwMSIsImhhc1NldENoYWxsZW5nZVF1ZXN0aW9uIjp0cnVlLCJmaXJzdE5hbWUiOiJMZXVjaW5lIEJvdCIsImlkIjo0Mjk5MjQzMTQ4NjM0NDM5NjgsImZhY2lsaXR5SWRzIjpbLTEsMTYxNjM2NzgwNCwxNjE2MzY3ODAzLDE2MTYzNjc4MDIsMTYxNjM2NzgwMV0sInNlcnZpY2VJZCI6ImM2ZDgyODViNzJhODRlZmI4ZmJkNjA4YzdjYWRhNDg0IiwiZmFjaWxpdGllcyI6W3siaWQiOiItMSIsIm5hbWUiOiJHbG9iYWwgUG9ydGFsIn0seyJpZCI6IjE2MTYzNjc4MDEiLCJuYW1lIjoiVW5pdCAxIn0seyJpZCI6IjE2MTYzNjc4MDIiLCJuYW1lIjoiVW5pdCAyIn0seyJpZCI6IjE2MTYzNjc4MDMiLCJuYW1lIjoiVW5pdCAzIn0seyJpZCI6IjE2MTYzNjc4MDQiLCJuYW1lIjoiVW5pdCA0In1dLCJjdXJyZW50RmFjaWxpdHlJZCI6MTYxNjM2NzgwMiwicm9sZU5hbWVzIjpbIkFDQ09VTlRfT1dORVIiXSwianRpIjoiMTFlOTk2Y2UyNzQ3NDJjZWFiZjI0ZmRjYThhNTczNWMiLCJ1c2VybmFtZSI6ImJvdDAxIiwic3ViIjoiYm90MDEiLCJpYXQiOjE3MDE0MjA1MDYsImV4cCI6MTcwOTk3NDEwNn0.ohOofJoIaSVNENpEmEGtCwGoTD9PwbKKvcuY3QcjMcaK0X5rE-vjyYnQJqzVRhcIYrizI8297DdtjaAwv17i0A'
-demo_token = 'eyJhbGciOiJIUzUxMiJ9.eyJsYXN0TmFtZSI6IiIsIm9yZ2FuaXNhdGlvbklkIjoxNjE3NjI1NDAxLCJyb2xlcyI6W3siaWQiOiIxIiwibmFtZSI6IkFDQ09VTlRfT1dORVIifV0sImVtcGxveWVlSWQiOiJCb3QwMSIsImhhc1NldENoYWxsZW5nZVF1ZXN0aW9uIjp0cnVlLCJmaXJzdE5hbWUiOiJMZXVjaW5lIEJvdCIsImlkIjo0Mjk5MjIxNzc1NTA5ODMxNjgsImZhY2lsaXR5SWRzIjpbLTEsMTY0MzEwMzUwMywxNjQzMTAzNTAyLDE2NDMxMDM1MDEsMTYxNjM2NzgwNCwxNjE2MzY3ODAzLDE2MTYzNjc4MDIsMTYxNjM2NzgwMV0sInNlcnZpY2VJZCI6ImM2ZDgyODViNzJhODRlZmI4ZmJkNjA4YzdjYWRhNDg0IiwiZmFjaWxpdGllcyI6W3siaWQiOiItMSIsIm5hbWUiOiJHbG9iYWwgUG9ydGFsIn0seyJpZCI6IjE2NDMxMDM1MDIiLCJuYW1lIjoiTG9uZG9uIn0seyJpZCI6IjE2NDMxMDM1MDEiLCJuYW1lIjoiTmV3IFlvcmsifSx7ImlkIjoiMTY0MzEwMzUwMyIsIm5hbWUiOiJTeWRuZXkifSx7ImlkIjoiMTYxNjM2NzgwMSIsIm5hbWUiOiJVbml0IDEifSx7ImlkIjoiMTYxNjM2NzgwMiIsIm5hbWUiOiJVbml0IDIifSx7ImlkIjoiMTYxNjM2NzgwMyIsIm5hbWUiOiJVbml0IDMifSx7ImlkIjoiMTYxNjM2NzgwNCIsIm5hbWUiOiJVbml0IDQifV0sImN1cnJlbnRGYWNpbGl0eUlkIjoxNjE2MzY3ODAyLCJyb2xlTmFtZXMiOlsiQUNDT1VOVF9PV05FUiJdLCJqdGkiOiI2MDk3Y2IyZTU3OGQ0MzIzYTUzYTA5YzE4OWQzZjYxNyIsInVzZXJuYW1lIjoiYm90MDEiLCJzdWIiOiJib3QwMSIsImlhdCI6MTcwMTQyMDA2MywiZXhwIjoxNzA5OTczNjYzfQ.LPT6Y1WFj_SDvi7aSIeP6ukRBgkuXI-ufW_TEztPdGCtBYPOLsb5cg9UtYC0aNLryIfzodW0joL-G-ExYJjxrw'
-token = demo_token
+uat_token = 'eyJhbGciOiJIUzUxMiJ9.eyJsYXN0TmFtZSI6IiIsIm9yZ2FuaXNhdGlvbklkIjoxNjE3NjI1NDAxLCJyb2xlcyI6W3siaWQiOiIxIiwibmFtZSI6IkFDQ09VTlRfT1dORVIifV0sImVtcGxveWVlSWQiOiJCb3QwMSIsImhhc1NldENoYWxsZW5nZVF1ZXN0aW9uIjp0cnVlLCJmaXJzdE5hbWUiOiJMZXVjaW5lIEJvdCIsImlkIjo0Mjk5MjQzMTQ4NjM0NDM5NjgsImZhY2lsaXR5SWRzIjpbLTEsMTYxNjM2NzgwNCwxNjE2MzY3ODAzLDE2MTYzNjc4MDIsMTYxNjM2NzgwMV0sInNlcnZpY2VJZCI6ImM2ZDgyODViNzJhODRlZmI4ZmJkNjA4YzdjYWRhNDg0IiwiZmFjaWxpdGllcyI6W3siaWQiOiItMSIsIm5hbWUiOiJHbG9iYWwgUG9ydGFsIn0seyJpZCI6IjE2MTYzNjc4MDEiLCJuYW1lIjoiVW5pdCAxIn0seyJpZCI6IjE2MTYzNjc4MDIiLCJuYW1lIjoiVW5pdCAyIn0seyJpZCI6IjE2MTYzNjc4MDMiLCJuYW1lIjoiVW5pdCAzIn0seyJpZCI6IjE2MTYzNjc4MDQiLCJuYW1lIjoiVW5pdCA0In1dLCJjdXJyZW50RmFjaWxpdHlJZCI6MTYxNjM2NzgwMiwicm9sZU5hbWVzIjpbIkFDQ09VTlRfT1dORVIiXSwianRpIjoiMTFlOTk2Y2UyNzQ3NDJjZWFiZjI0ZmRjYThhNTczNWMiLCJ1c2VybmFtZSI6ImJvdDAxIiwic3ViIjoiYm90MDEiLCJpYXQiOjE3MDE0MjA1MDYsImV4cCI6MTcwOTk3NDEwNn0.ohOofJoIaSVNENpEmEGtCwGoTD9PwbKKvcuY3QcjMcaK0X5rE-vjyYnQJqzVRhcIYrizI8297DdtjaAwv17i0A'
+uat_url = 'https://api.valent.uat.platform.leucinetech.com/v1/objects'
+# demo_token = 'eyJhbGciOiJIUzUxMiJ9.eyJsYXN0TmFtZSI6IiIsIm9yZ2FuaXNhdGlvbklkIjoxNjE3NjI1NDAxLCJyb2xlcyI6W3siaWQiOiIxIiwibmFtZSI6IkFDQ09VTlRfT1dORVIifV0sImVtcGxveWVlSWQiOiJCb3QwMSIsImhhc1NldENoYWxsZW5nZVF1ZXN0aW9uIjp0cnVlLCJmaXJzdE5hbWUiOiJMZXVjaW5lIEJvdCIsImlkIjo0Mjk5MjIxNzc1NTA5ODMxNjgsImZhY2lsaXR5SWRzIjpbLTEsMTY0MzEwMzUwMywxNjQzMTAzNTAyLDE2NDMxMDM1MDEsMTYxNjM2NzgwNCwxNjE2MzY3ODAzLDE2MTYzNjc4MDIsMTYxNjM2NzgwMV0sInNlcnZpY2VJZCI6ImM2ZDgyODViNzJhODRlZmI4ZmJkNjA4YzdjYWRhNDg0IiwiZmFjaWxpdGllcyI6W3siaWQiOiItMSIsIm5hbWUiOiJHbG9iYWwgUG9ydGFsIn0seyJpZCI6IjE2NDMxMDM1MDIiLCJuYW1lIjoiTG9uZG9uIn0seyJpZCI6IjE2NDMxMDM1MDEiLCJuYW1lIjoiTmV3IFlvcmsifSx7ImlkIjoiMTY0MzEwMzUwMyIsIm5hbWUiOiJTeWRuZXkifSx7ImlkIjoiMTYxNjM2NzgwMSIsIm5hbWUiOiJVbml0IDEifSx7ImlkIjoiMTYxNjM2NzgwMiIsIm5hbWUiOiJVbml0IDIifSx7ImlkIjoiMTYxNjM2NzgwMyIsIm5hbWUiOiJVbml0IDMifSx7ImlkIjoiMTYxNjM2NzgwNCIsIm5hbWUiOiJVbml0IDQifV0sImN1cnJlbnRGYWNpbGl0eUlkIjoxNjE2MzY3ODAyLCJyb2xlTmFtZXMiOlsiQUNDT1VOVF9PV05FUiJdLCJqdGkiOiI2MDk3Y2IyZTU3OGQ0MzIzYTUzYTA5YzE4OWQzZjYxNyIsInVzZXJuYW1lIjoiYm90MDEiLCJzdWIiOiJib3QwMSIsImlhdCI6MTcwMTQyMDA2MywiZXhwIjoxNzA5OTczNjYzfQ.LPT6Y1WFj_SDvi7aSIeP6ukRBgkuXI-ufW_TEztPdGCtBYPOLsb5cg9UtYC0aNLryIfzodW0joL-G-ExYJjxrw'
+# uat_url = 'https://api.valent.demo.platform.leucinetech.com/v1/objects'
+url = uat_url
+token = uat_token
 headers = {
     'Authorization': f'Bearer {token}'
 }
@@ -136,11 +138,15 @@ def _build_search_filter(key, value):
 def lambda_handler(event, context):
     sftp = setup_sftp_connection()
 
-    # unsynced_po_files = get_unsynced_files(sftp, PO_DIR, "production_order")
-    # process_po_files(sftp, unsynced_po_files)
+    prefix_production_order = "production_order"
+    unsynced_po_files = get_unsynced_files(sftp, PO_DIR, prefix_production_order)
+    process_po_files(sftp, unsynced_po_files)
+    set_last_sync_time(datetime.now(), prefix_production_order)
 
+    prefix_inventory = "inventory"
     unsynced_inventory_files = get_unsynced_files(sftp, INVENTORY_DIR, "inventory")
     process_inventory_files(sftp, unsynced_inventory_files)
+    set_last_sync_time(datetime.now(), prefix_inventory)
 
     close_sftp_connection(sftp)
 
@@ -154,22 +160,30 @@ def setup_sftp_connection():
     return sftp
 
 
-def get_unsynced_files(sftp, directory: str, prefix: str):
-    files = sftp.listdir(directory)
-    # List to hold unsynced files
-    unsynced_files = []
-    
+# Function to get the last sync time
+def get_last_sync_time(prefix: str):
+    try:
+        with open(f"{prefix}_last_sync_time.txt", 'r') as f:
+            return datetime.fromisoformat(f.read().strip())
+    except FileNotFoundError:
+        return datetime.min
 
-    # Check each file against DynamoDB to see if it's been synced
+# Function to set the last sync time
+def set_last_sync_time(sync_time, prefix: str):
+    with open(f"{prefix}_last_sync_time.txt", 'w') as f:
+        f.write(sync_time.isoformat())
+
+
+def get_unsynced_files(sftp, directory: str, prefix: str):
+    files = sftp.listdir_attr(directory)
+    last_sync_time = get_last_sync_time(prefix)
+    unsynced_files = []
+
     for file in files:
-        try:
-            if not _file_exist(file, prefix):
-                unsynced_files.append(file)
-        except Exception as e:
-            print(e)
-            # Depending on your error policy, you might continue, return, or raise
-    # return unsynced_files
-    return ["INV_11302023.XLSX"]
+        file_time = datetime.fromtimestamp(file.st_mtime)
+        if file_time > last_sync_time:
+            unsynced_files.append(file.filename)
+    return unsynced_files
 
 
 def _file_exist(file_name: str, prefix: str):
@@ -186,8 +200,8 @@ def process_inventory_files(sftp, filenames):
     for filename in filenames:
         _display("")
         _display(f"------------------- Processing file: {filename} -------------------", True)
-        valid_exentsions = {".xls", ".xlsx"}
-        is_valid_file_extension = os.path.splitext(filename)[1].lower() in valid_exentsions
+        valid_extensions = {".xls", ".xlsx"}
+        is_valid_file_extension = os.path.splitext(filename)[1].lower() in valid_extensions
         if not is_valid_file_extension:
             _display(f"Skipping file {filename} due to invalid file extension.")
             continue
@@ -205,6 +219,7 @@ def process_inventory_files(sftp, filenames):
             _display(f"Material: {material_code}")
             lots = material['lots']
             for lot in lots:
+                material_lot_obj = None
                 material_lot_number = lot['material_lot_number']
                 unrestricted_quantity = lot['unrestricted_quantity']
                 in_quality_inspection = lot['in_quality_inspection']
@@ -212,7 +227,10 @@ def process_inventory_files(sftp, filenames):
                 stk_in_transit = lot['stk_in_transit']
                 restricted_use = lot['restricted_use']
                 uom = lot['uom']
-                material_lot_obj = _process_material_lot(material_lot_number, material_name, unrestricted_quantity, in_quality_inspection, blocked, stk_in_transit, restricted_use, uom, material_obj)
+                if material_lot_number:
+                    material_lot_obj = _process_material_lot(material_lot_number, material_name, unrestricted_quantity, in_quality_inspection, blocked, stk_in_transit, restricted_use, uom, material_obj)
+                else:
+                    _display(f"ERROR: Cannot create Lot for line item, Material: {material}, Lot: {lot}", True)
                 _display(material_lot_obj)
 
 
@@ -570,9 +588,11 @@ def _create_material(material_code, material_name):
 def _process_material_lot(material_lot_number, material_name, unrestricted_quantity, in_quality_inspection, blocked, stk_in_transit, restricted_use, uom, material_obj):
     material_lot_obj = _get_material_lot(material_lot_number)
     if material_lot_obj is None:
+        _display(f"Creating Lot [{material_lot_number}] for material: {material_obj['externalId']}", True)
         material_lot_obj = _create_material_lot(material_lot_number, material_name, unrestricted_quantity, in_quality_inspection, blocked, stk_in_transit, restricted_use, uom, material_obj)
-    # else:
-    #     material_lot_obj = _update_material_lot(material_lot_obj, material_lot_number, material_name, unrestricted_quantity, in_quality_inspection, blocked, stk_in_transit, restricted_use, uom, material_obj)
+    else:
+        _display(f"Updating Lot [{material_lot_number}] for material: {material_obj['externalId']}", True)
+        material_lot_obj = _update_material_lot(material_lot_obj, material_lot_number, material_name, unrestricted_quantity, in_quality_inspection, blocked, stk_in_transit, restricted_use, uom, material_obj)
     return material_lot_obj
 
 
@@ -603,8 +623,8 @@ def _get_particular_material_lot(material_lot_id):
     if response.status_code == 200:
         response = response.json()
         data = response['data']
-        if len(data):
-            material_lot_obj = data[0]
+        if data:
+            material_lot_obj = data
     else:
         print('Error:', response.status_code)
         print('Error:', response)
