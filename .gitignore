@@ -1,2 +1,4 @@
 .idea
 *.ipynb_checkpoints
+/ftp-etl/inventory_last_sync_time.txt
+/ftp-etl/production_order_last_sync_time.txt
