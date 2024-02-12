@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from datetime import datetime
 
@@ -9,25 +10,39 @@ import requests
 DEBUG = True
 # SFTP connection details
 HOST = 'sftpval.valent.com'
-# USERNAME = 'SAPEBRQA'
-# PASSWORD = 'X3Wmbnde4we'
-
 USERNAME = 'SAPEBR'
 PASSWORD = 'zuKABN34Bhjk'
 
 PO_DIR = 'Outbound'
 INVENTORY_DIR = 'Inventory'
 
-uat_token = 'eyJhbGciOiJIUzUxMiJ9.eyJsYXN0TmFtZSI6IiIsIm9yZ2FuaXNhdGlvbklkIjoxNjE3NjI1NDAxLCJyb2xlcyI6W3siaWQiOiIxIiwibmFtZSI6IkFDQ09VTlRfT1dORVIifV0sImVtcGxveWVlSWQiOiJCb3QwMSIsImhhc1NldENoYWxsZW5nZVF1ZXN0aW9uIjp0cnVlLCJmaXJzdE5hbWUiOiJMZXVjaW5lIEJvdCIsImlkIjo0Mjk5MjQzMTQ4NjM0NDM5NjgsImZhY2lsaXR5SWRzIjpbLTEsMTYxNjM2NzgwNCwxNjE2MzY3ODAzLDE2MTYzNjc4MDIsMTYxNjM2NzgwMV0sInNlcnZpY2VJZCI6ImM2ZDgyODViNzJhODRlZmI4ZmJkNjA4YzdjYWRhNDg0IiwiZmFjaWxpdGllcyI6W3siaWQiOiItMSIsIm5hbWUiOiJHbG9iYWwgUG9ydGFsIn0seyJpZCI6IjE2MTYzNjc4MDEiLCJuYW1lIjoiVW5pdCAxIn0seyJpZCI6IjE2MTYzNjc4MDIiLCJuYW1lIjoiVW5pdCAyIn0seyJpZCI6IjE2MTYzNjc4MDMiLCJuYW1lIjoiVW5pdCAzIn0seyJpZCI6IjE2MTYzNjc4MDQiLCJuYW1lIjoiVW5pdCA0In1dLCJjdXJyZW50RmFjaWxpdHlJZCI6MTYxNjM2NzgwMiwicm9sZU5hbWVzIjpbIkFDQ09VTlRfT1dORVIiXSwianRpIjoiMTFlOTk2Y2UyNzQ3NDJjZWFiZjI0ZmRjYThhNTczNWMiLCJ1c2VybmFtZSI6ImJvdDAxIiwic3ViIjoiYm90MDEiLCJpYXQiOjE3MDE0MjA1MDYsImV4cCI6MTcwOTk3NDEwNn0.ohOofJoIaSVNENpEmEGtCwGoTD9PwbKKvcuY3QcjMcaK0X5rE-vjyYnQJqzVRhcIYrizI8297DdtjaAwv17i0A'
-uat_url = 'https://api.valent.uat.platform.leucinetech.com/v1/objects'
-# demo_token = 'eyJhbGciOiJIUzUxMiJ9.eyJsYXN0TmFtZSI6IiIsIm9yZ2FuaXNhdGlvbklkIjoxNjE3NjI1NDAxLCJyb2xlcyI6W3siaWQiOiIxIiwibmFtZSI6IkFDQ09VTlRfT1dORVIifV0sImVtcGxveWVlSWQiOiJCb3QwMSIsImhhc1NldENoYWxsZW5nZVF1ZXN0aW9uIjp0cnVlLCJmaXJzdE5hbWUiOiJMZXVjaW5lIEJvdCIsImlkIjo0Mjk5MjIxNzc1NTA5ODMxNjgsImZhY2lsaXR5SWRzIjpbLTEsMTY0MzEwMzUwMywxNjQzMTAzNTAyLDE2NDMxMDM1MDEsMTYxNjM2NzgwNCwxNjE2MzY3ODAzLDE2MTYzNjc4MDIsMTYxNjM2NzgwMV0sInNlcnZpY2VJZCI6ImM2ZDgyODViNzJhODRlZmI4ZmJkNjA4YzdjYWRhNDg0IiwiZmFjaWxpdGllcyI6W3siaWQiOiItMSIsIm5hbWUiOiJHbG9iYWwgUG9ydGFsIn0seyJpZCI6IjE2NDMxMDM1MDIiLCJuYW1lIjoiTG9uZG9uIn0seyJpZCI6IjE2NDMxMDM1MDEiLCJuYW1lIjoiTmV3IFlvcmsifSx7ImlkIjoiMTY0MzEwMzUwMyIsIm5hbWUiOiJTeWRuZXkifSx7ImlkIjoiMTYxNjM2NzgwMSIsIm5hbWUiOiJVbml0IDEifSx7ImlkIjoiMTYxNjM2NzgwMiIsIm5hbWUiOiJVbml0IDIifSx7ImlkIjoiMTYxNjM2NzgwMyIsIm5hbWUiOiJVbml0IDMifSx7ImlkIjoiMTYxNjM2NzgwNCIsIm5hbWUiOiJVbml0IDQifV0sImN1cnJlbnRGYWNpbGl0eUlkIjoxNjE2MzY3ODAyLCJyb2xlTmFtZXMiOlsiQUNDT1VOVF9PV05FUiJdLCJqdGkiOiI2MDk3Y2IyZTU3OGQ0MzIzYTUzYTA5YzE4OWQzZjYxNyIsInVzZXJuYW1lIjoiYm90MDEiLCJzdWIiOiJib3QwMSIsImlhdCI6MTcwMTQyMDA2MywiZXhwIjoxNzA5OTczNjYzfQ.LPT6Y1WFj_SDvi7aSIeP6ukRBgkuXI-ufW_TEztPdGCtBYPOLsb5cg9UtYC0aNLryIfzodW0joL-G-ExYJjxrw'
-# uat_url = 'https://api.valent.demo.platform.leucinetech.com/v1/objects'
-url = uat_url
-token = uat_token
+url = 'http://localhost:8085/v1/objects'
+token = 'eyJhbGciOiJIUzUxMiJ9.eyJyb2xlcyI6W10sImVtcGxveWVlSWQiOiJCT1QwMSIsImhhc1NldENoYWxsZW5nZVF1ZXN0aW9uIjp0cnVlLCJmaXJzdE5hbWUiOiJMZXVjaW5lIEJvdCIsImlkIjoyLCJmYWNpbGl0eUlkcyI6W10sInNlcnZpY2VJZCI6IjE3MDM3NjI4NzEiLCJmYWNpbGl0aWVzIjpbXSwiY3VycmVudEZhY2lsaXR5SWQiOjE2OTU5ODQwMjMsInJvbGVOYW1lcyI6W10sImVtYWlsIjoiYm90QGxldWNpbmV0ZWNoLmNvbSIsImp0aSI6ImFkMjk4ZTdmMDZjYjRmM2RhMzZkMWYwNjdlMmI3N2M4IiwidXNlcm5hbWUiOiJib3QiLCJzdWIiOiJib3QiLCJpYXQiOjE3MDM3NjgwNzAsImV4cCI6MTczNTMwNDA3MH0.k4Tl3nD9nA-EmMyH7Vq9Q8XLaBUF41vySdjxA305IRmK5E0gWamJsSfQ8_BXgfBPhgdJcKhvAiGJe0iIwrYMNA'
 headers = {
     'Authorization': f'Bearer {token}'
 }
 
+# Get the current date
+now = datetime.now()
+year = now.strftime("%Y")
+month = now.strftime("%m")
+
+base_dir = f"/home/platform-admin/valent/etl"
+
+# Create directory path for year and month
+log_dir = f"{base_dir}/logs/{year}/{month}"
+
+# Create directories if they don't exist
+if not os.path.exists(log_dir):
+    os.makedirs(log_dir)
+
+# Set log filename with daily date
+log_filename = now.strftime(f"{log_dir}/sap-sftp-etl-logs-%Y-%m-%d.txt")
+
+# Set up logging
+logging.basicConfig(filename=log_filename, level=logging.INFO, format='%(asctime)s %(message)s')
+
+# Key mappings for different object types and their properties
 key_mappings = {
     'product': {
         'collection': 'products',
@@ -58,7 +73,11 @@ key_mappings = {
         'object_type_id': '64ccc000a8a5a262c13c807c',
         'property': {
             'product_name': '64ccc000a8a5a262c13c807d',
-            'batch_number': '64ccc000a8a5a262c13c807e'
+            'batch_number': '64ccc000a8a5a262c13c807e',
+            'batch_status': '65ca096611631e060be2d4b0',
+            'target_quantity': '65ca0c5711631e060be2d4b3',
+            'batch_yield': '65ca094b11631e060be2d4af',
+            'uom': '65ca15c211631e060be2d4b4',
         },
         'relation': {
             'production_order': '64ccc013a8a5a262c13c8084',
@@ -120,19 +139,25 @@ key_mappings = {
     }
 }
 
+# SFP Codes
 sfp_codes = ['15538', '15539', '16024', '16874', '16876', '18571', '20010', '20011', '22915', '23472', '25461', '25932',
              '30445', '30446', '37388', '44493', '53422', '58392']
 
 
+# Function to display messages
 def _display(message: str, override=False):
+    if message is not None and message != "":
+        logging.info(message)
     if DEBUG or override:
         print(message)
 
 
+# Function to build search filter
 def _build_search_filter(key, value):
     return json.dumps({"op": "AND", "fields": [{"field": f"searchable.{key}", "op": "EQ", "values": [f"{value}"]}]})
 
 
+# Main function
 def lambda_handler(event, context):
     sftp = setup_sftp_connection()
 
@@ -149,6 +174,7 @@ def lambda_handler(event, context):
     close_sftp_connection(sftp)
 
 
+# Function to setup SFTP connection
 def setup_sftp_connection():
     # Establish an SSH connection
     ssh_client = paramiko.SSHClient()
@@ -158,20 +184,28 @@ def setup_sftp_connection():
     return sftp
 
 
+# Function to close SFTP connection
+def close_sftp_connection(sftp):
+    sftp.close()
+    # sftp.get_transport().close()
+
+
 # Function to get the last sync time
 def get_last_sync_time(prefix: str):
     try:
-        with open(f"{prefix}_last_sync_time.txt", 'r') as f:
+        with open(f"{base_dir}/{prefix}_last_sync_time.txt", 'r') as f:
             return datetime.fromisoformat(f.read().strip())
     except FileNotFoundError:
         return datetime.min
 
+
 # Function to set the last sync time
 def set_last_sync_time(sync_time, prefix: str):
-    with open(f"{prefix}_last_sync_time.txt", 'w') as f:
+    with open(f"{base_dir}/{prefix}_last_sync_time.txt", 'w') as f:
         f.write(sync_time.isoformat())
 
 
+# Function to get unsynced files
 def get_unsynced_files(sftp, directory: str, prefix: str):
     files = sftp.listdir_attr(directory)
     last_sync_time = get_last_sync_time(prefix)
@@ -184,6 +218,7 @@ def get_unsynced_files(sftp, directory: str, prefix: str):
     return unsynced_files
 
 
+# Function to process inventory files
 def process_inventory_files(sftp, filenames):
     _display(f"Starting to Process {len(filenames)} files: {filenames}", True)
     for filename in filenames:
@@ -219,7 +254,9 @@ def process_inventory_files(sftp, filenames):
                 restricted_use = lot['restricted_use']
                 uom = lot['uom']
                 if material_lot_number:
-                    material_lot_obj = _process_material_lot(material_lot_number, material_name, unrestricted_quantity, in_quality_inspection, blocked, stk_in_transit, restricted_use, uom, material_obj)
+                    material_lot_obj = _process_material_lot(material_lot_number, material_name, unrestricted_quantity,
+                                                             in_quality_inspection, blocked, stk_in_transit,
+                                                             restricted_use, uom, material_obj)
                     to_be_processed_material_lots[material_lot_number] = material_lot_obj
                 else:
                     _display(f"ERROR: Cannot create Lot for line item, Material: {material}, Lot: {lot}", True)
@@ -227,9 +264,11 @@ def process_inventory_files(sftp, filenames):
         to_be_archived_material_lot_ids = set(existing_material_lots.keys()) - set(to_be_processed_material_lots.keys())
         for key in to_be_archived_material_lot_ids:
             material_lot_id = existing_material_lots[key]
+            _display(f"Archiving Lot [{material_lot_number}] for material: {material_obj['externalId']}", True)
             _archive_material_lot(material_lot_id)
 
 
+# Function to process PO files
 def process_po_files(sftp, filenames):
     _display(f"Starting to Process {len(filenames)} files: {filenames}", True)
     for filename in filenames:
@@ -254,6 +293,8 @@ def process_po_files(sftp, filenames):
         scheduled_start = header['scheduled_start']
         scheduled_end = header['scheduled_end']
         batch_number = header['batch_number']
+        batch_target_quantity = header['batch_target_quantity']
+        batch_uom = header['uom']
 
         header_product_obj = None
         header_semi_finished_product_obj = None
@@ -266,10 +307,12 @@ def process_po_files(sftp, filenames):
             _display(f"Product: {code}")
             _display(header_product_obj)
 
-        production_order_obj = _process_production_order(production_order_number, name, scheduled_start, scheduled_end, header_product_obj, header_semi_finished_product_obj)
+        production_order_obj = _process_production_order(production_order_number, name, scheduled_start, scheduled_end,
+                                                         header_product_obj, header_semi_finished_product_obj)
         _display(production_order_obj)
 
-        batch_obj = _process_batch(batch_number, name, production_order_obj, header_product_obj, header_semi_finished_product_obj)
+        batch_obj = _process_batch(batch_number, name, batch_target_quantity, batch_uom, production_order_obj,
+                                   header_product_obj, header_semi_finished_product_obj)
         _display(batch_obj)
 
         for component in components:
@@ -288,10 +331,12 @@ def process_po_files(sftp, filenames):
             else:
                 material_obj = _process_material(code, name)
                 _display(material_obj)
-            bom_material_obj = _process_bom_material(name, bom_code, target_quantity, uom, production_order_obj, material_obj, semi_finished_product_obj)
+            bom_material_obj = _process_bom_material(name, bom_code, target_quantity, uom, production_order_obj,
+                                                     material_obj, semi_finished_product_obj)
             _display(bom_material_obj)
 
 
+# Function to get epoch
 def _get_epoch(date_str, format='%m/%d/%Y'):
     date_str = date_str.replace('\r', '')
     datetime_obj = datetime.strptime(date_str, format)
@@ -299,14 +344,8 @@ def _get_epoch(date_str, format='%m/%d/%Y'):
     return epoch
 
 
-def close_sftp_connection(sftp):
-    sftp.close()
-    # sftp.get_transport().close()
-
-
+# Function to extract PO data
 def _extract_po_data(lines):
-    # Split the content into lines and then by the pipe character
-    # lines = [line.split("|") for line in content.strip().split("\n")]
     header = {}
     components = []
 
@@ -321,13 +360,17 @@ def _extract_po_data(lines):
             scheduled_start = str(_get_epoch(header_data[9])) if len(header_data) > 1 else None
             scheduled_end = str(_get_epoch(header_data[10])) if len(header_data) > 1 else None
             batch_number = header_data[8] if len(header_data) > 1 else None
+            batch_target_quantity = header_data[6] if len(header_data) > 1 else None
+            uom = header_data[7] if len(header_data) > 1 else None
             header = {
                 'name': name,
                 'code': code,
                 'production_order_number': production_order_number,
                 'scheduled_start': scheduled_start,
                 'scheduled_end': scheduled_end,
-                'batch_number': batch_number
+                'batch_number': batch_number,
+                'batch_target_quantity': batch_target_quantity,
+                'uom': uom
             }
         elif line[0] == "C":
             component_data = line
@@ -352,6 +395,7 @@ def _extract_po_data(lines):
     }
 
 
+# Function to process product
 def _process_product(product_code, product_name):
     product_obj = _get_product(product_code)
     if product_obj is None:
@@ -359,6 +403,7 @@ def _process_product(product_code, product_name):
     return product_obj
 
 
+# Function to get product
 def _get_product(product_code):
     product_obj = None
     product_collection = key_mappings['product']['collection']
@@ -380,6 +425,7 @@ def _get_product(product_code):
     return product_obj
 
 
+# Function to create product
 def _create_product(product_code, product_name):
     product_obj = None
     product_url = f"{url}"
@@ -407,13 +453,17 @@ def _create_product(product_code, product_name):
     return product_obj
 
 
-def _process_production_order(production_order_number, name, scheduled_start, scheduled_end, product_obj, semi_finished_product_obj):
+# Function to process production order
+def _process_production_order(production_order_number, name, scheduled_start, scheduled_end, product_obj,
+                              semi_finished_product_obj):
     production_order_obj = _get_production_order(production_order_number)
     if production_order_obj is None:
-        production_order_obj = _create_production_order(production_order_number, name, scheduled_start, scheduled_end, product_obj, semi_finished_product_obj)
+        production_order_obj = _create_production_order(production_order_number, name, scheduled_start, scheduled_end,
+                                                        product_obj, semi_finished_product_obj)
     return production_order_obj
 
 
+# Function to get production order
 def _get_production_order(production_order_number):
     production_order_obj = None
     production_order_collection = key_mappings['production_order']['collection']
@@ -434,7 +484,9 @@ def _get_production_order(production_order_number):
     return production_order_obj
 
 
-def _create_production_order(production_order_number, name, scheduled_start, scheduled_end, product_obj, semi_finished_product_obj):
+# Function to create production order
+def _create_production_order(production_order_number, name, scheduled_start, scheduled_end, product_obj,
+                             semi_finished_product_obj):
     production_order_obj = None
     production_order_url = f"{url}"
     data = {
@@ -447,7 +499,8 @@ def _create_production_order(production_order_number, name, scheduled_start, sch
         },
         'relations': {
             key_mappings['production_order']['relation']['product']: [product_obj] if product_obj is not None else None,
-            key_mappings['production_order']['relation']['semi_finished_product']: [semi_finished_product_obj] if semi_finished_product_obj is not None else None
+            key_mappings['production_order']['relation']['semi_finished_product']: [
+                semi_finished_product_obj] if semi_finished_product_obj is not None else None
         }
     }
     response = requests.post(production_order_url, json=data, headers=headers)
@@ -467,13 +520,17 @@ def _create_production_order(production_order_number, name, scheduled_start, sch
     return production_order_obj
 
 
-def _process_batch(batch_number, product_name, production_order_obj, product_obj, semi_finished_product_obj):
+# Function to process batch
+def _process_batch(batch_number, product_name, batch_target_quantity, batch_uom, production_order_obj, product_obj,
+                   semi_finished_product_obj):
     batch_obj = _get_batch(batch_number)
     if batch_obj is None:
-        batch_obj = _create_batch(batch_number, product_name, production_order_obj, product_obj, semi_finished_product_obj)
+        batch_obj = _create_batch(batch_number, product_name, batch_target_quantity, batch_uom, production_order_obj,
+                                  product_obj, semi_finished_product_obj)
     return batch_obj
 
 
+# Function to get batch
 def _get_batch(batch_number):
     batch_obj = None
     batch_collection = key_mappings['batch']['collection']
@@ -494,7 +551,9 @@ def _get_batch(batch_number):
     return batch_obj
 
 
-def _create_batch(batch_number, product_name, production_order_obj, product_obj, semi_finished_product_obj):
+# Function to create batch
+def _create_batch(batch_number, product_name, batch_target_quantity, batch_uom, production_order_obj, product_obj,
+                  semi_finished_product_obj):
     batch_obj = None
     batch_url = f"{url}"
     data = {
@@ -502,11 +561,16 @@ def _create_batch(batch_number, product_name, production_order_obj, product_obj,
         'properties': {
             key_mappings['batch']['property']['batch_number']: batch_number,
             key_mappings['batch']['property']['product_name']: product_name,
+            key_mappings['batch']['property']['batch_status']: ['65ca096611631e060be2d4b2'],
+            key_mappings['batch']['property']['batch_yield']: '0',
+            key_mappings['batch']['property']['target_quantity']: batch_target_quantity,
+            key_mappings['batch']['property']['uom']: batch_uom,
         },
         'relations': {
             key_mappings['batch']['relation']['production_order']: [production_order_obj],
             key_mappings['batch']['relation']['product']: [product_obj] if product_obj is not None else None,
-            key_mappings['batch']['relation']['semi_finished_product']: [semi_finished_product_obj] if semi_finished_product_obj is not None else None
+            key_mappings['batch']['relation']['semi_finished_product']: [
+                semi_finished_product_obj] if semi_finished_product_obj is not None else None
         }
     }
     response = requests.post(batch_url, json=data, headers=headers)
@@ -581,14 +645,19 @@ def _create_material(material_code, material_name):
     return material_obj
 
 
-def _process_material_lot(material_lot_number, material_name, unrestricted_quantity, in_quality_inspection, blocked, stk_in_transit, restricted_use, uom, material_obj):
+def _process_material_lot(material_lot_number, material_name, unrestricted_quantity, in_quality_inspection, blocked,
+                          stk_in_transit, restricted_use, uom, material_obj):
     material_lot_obj = _get_material_lot(material_lot_number)
     if material_lot_obj is None:
         _display(f"Creating Lot [{material_lot_number}] for material: {material_obj['externalId']}", True)
-        material_lot_obj = _create_material_lot(material_lot_number, material_name, unrestricted_quantity, in_quality_inspection, blocked, stk_in_transit, restricted_use, uom, material_obj)
+        material_lot_obj = _create_material_lot(material_lot_number, material_name, unrestricted_quantity,
+                                                in_quality_inspection, blocked, stk_in_transit, restricted_use, uom,
+                                                material_obj)
     else:
         _display(f"Updating Lot [{material_lot_number}] for material: {material_obj['externalId']}", True)
-        material_lot_obj = _update_material_lot(material_lot_obj, material_lot_number, material_name, unrestricted_quantity, in_quality_inspection, blocked, stk_in_transit, restricted_use, uom, material_obj)
+        material_lot_obj = _update_material_lot(material_lot_obj, material_lot_number, material_name,
+                                                unrestricted_quantity, in_quality_inspection, blocked, stk_in_transit,
+                                                restricted_use, uom, material_obj)
     return material_lot_obj
 
 
@@ -612,6 +681,7 @@ def _get_material_lot(material_lot_number):
         print('Error:', response)
     return material_lot_obj
 
+
 def _get_particular_material_lot(material_lot_id):
     material_lot_obj = None
     material_lot_url = f"{url}/{material_lot_id}?collection={key_mappings['material_lot']['collection']}"
@@ -627,7 +697,8 @@ def _get_particular_material_lot(material_lot_id):
     return material_lot_obj
 
 
-def _create_material_lot(material_lot_number, material_name, unrestricted_quantity, in_quality_inspection, blocked, stk_in_transit, restricted_use, uom, material_obj):
+def _create_material_lot(material_lot_number, material_name, unrestricted_quantity, in_quality_inspection, blocked,
+                         stk_in_transit, restricted_use, uom, material_obj):
     material_lot_obj = None
     material_lot_url = f"{url}"
     data = {
@@ -663,17 +734,22 @@ def _create_material_lot(material_lot_number, material_name, unrestricted_quanti
     return material_lot_obj
 
 
-def _update_material_lot(material_lot_obj, material_lot_number, material_name, unrestricted_quantity, in_quality_inspection, blocked, stk_in_transit, restricted_use, uom, material_obj):
+def _update_material_lot(material_lot_obj, material_lot_number, material_name, unrestricted_quantity,
+                         in_quality_inspection, blocked, stk_in_transit, restricted_use, uom, material_obj):
     # material_lot_obj = None
     material_lot_obj = _get_particular_material_lot(material_lot_obj['id'])
     material_lot_url = f"{url}/{material_lot_obj['id']}"
     relations = material_lot_obj['relations']
     properties = material_lot_obj['properties']
-    temp = next((property for property in properties if property["id"] == key_mappings['material_lot']['property']['material_lot_number']), None)
+    temp = next((property for property in properties if
+                 property["id"] == key_mappings['material_lot']['property']['material_lot_number']), None)
     material_lot_number = temp['value']
-    temp = next((property for property in properties if property["id"] == key_mappings['material_lot']['property']['material_name']), None)
+    temp = next((property for property in properties if
+                 property["id"] == key_mappings['material_lot']['property']['material_name']), None)
     material_name = temp['value']
-    temp = next((relation for relation in relations if relation["id"] == key_mappings['material_lot']['relation']['material']), None)
+    temp = next(
+        (relation for relation in relations if relation["id"] == key_mappings['material_lot']['relation']['material']),
+        None)
     target = temp['targets'][0]
     material_obj = {
         "collection": target['collection'],
@@ -721,8 +797,8 @@ def _archive_material_lot(material_lot_id):
     material_lot_obj = None
     material_lot_url = f"{url}/{material_lot_id}/archive"
     data = {
-        "collection": key_mappings['material_lot']['collection'],
-        "reason": "Some Archive Reason"
+        "collectionName": key_mappings['material_lot']['collection'],
+        "reason": "Leucine Bot archived this object basis the latest inventory file received from SAP"
     }
     response = requests.patch(material_lot_url, json=data, headers=headers)
     if response.status_code == 200:
@@ -739,7 +815,8 @@ def _archive_material_lot(material_lot_id):
 def _process_semi_finished_product(semi_finished_product_code, semi_finished_product_name):
     semi_finished_product_obj = _get_semi_finished_product(semi_finished_product_code)
     if semi_finished_product_obj is None:
-        semi_finished_product_obj = _create_semi_finished_product(semi_finished_product_code, semi_finished_product_name)
+        semi_finished_product_obj = _create_semi_finished_product(semi_finished_product_code,
+                                                                  semi_finished_product_name)
     return semi_finished_product_obj
 
 
@@ -855,6 +932,7 @@ def _create_bom_material(material_name, bom_code, target_quantity, uom, producti
         print('Error:', response.text)
     return bom_material_obj
 
+
 def _get_all_existing_material_lots():
     material_lots_mapping = dict()
     page = 0
@@ -886,6 +964,7 @@ def _get_all_existing_material_lots():
             break
     return material_lots_mapping
 
+
 def _extract_inventory_data(lines):
     # Split the content into lines and then by the pipe character
     materials = {}
@@ -905,14 +984,12 @@ def _extract_inventory_data(lines):
             }
 
             if material_code not in materials:
-                materials[material_code] = {'material_code': material_code,'material_name': material_name, 'lots': []}
+                materials[material_code] = {'material_code': material_code, 'material_name': material_name, 'lots': []}
 
             # Append the lot details to the material's 'lots' list
             materials[material_code]['lots'].append(lot)
 
     return materials
 
-# process_inventory_files(None,None)
-# process_po_files(None, None)
-# lambda_handler(None, None)
-_get_all_existing_material_lots()
+
+lambda_handler(None, None)
