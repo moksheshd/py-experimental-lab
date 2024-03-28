@@ -2,6 +2,7 @@ import json
 import logging
 import os
 from datetime import datetime
+import time
 
 import pandas as pd
 import paramiko
@@ -15,8 +16,11 @@ PASSWORD = 'zuKABN34Bhjk'
 
 PO_DIR = 'Outbound'
 INVENTORY_DIR = 'Inventory'
+PROCESSED_FILES_DIR = 'Processed_Files'
+PROCESSED_PO_DIR = os.path.join(PROCESSED_FILES_DIR, PO_DIR)
+PROCESSED_INVENTORY_DIR = os.path.join(PROCESSED_FILES_DIR, INVENTORY_DIR)
 
-url = 'http://localhost:8085/v1/objects'
+url = 'http://localhost:8081/v1/objects'
 token = 'eyJhbGciOiJIUzUxMiJ9.eyJyb2xlcyI6W10sImVtcGxveWVlSWQiOiJCT1QwMSIsImhhc1NldENoYWxsZW5nZVF1ZXN0aW9uIjp0cnVlLCJmaXJzdE5hbWUiOiJMZXVjaW5lIEJvdCIsImlkIjoyLCJmYWNpbGl0eUlkcyI6W10sInNlcnZpY2VJZCI6IjE3MDM3NjI4NzEiLCJmYWNpbGl0aWVzIjpbXSwiY3VycmVudEZhY2lsaXR5SWQiOjE2OTU5ODQwMjMsInJvbGVOYW1lcyI6W10sImVtYWlsIjoiYm90QGxldWNpbmV0ZWNoLmNvbSIsImp0aSI6ImFkMjk4ZTdmMDZjYjRmM2RhMzZkMWYwNjdlMmI3N2M4IiwidXNlcm5hbWUiOiJib3QiLCJzdWIiOiJib3QiLCJpYXQiOjE3MDM3NjgwNzAsImV4cCI6MTczNTMwNDA3MH0.k4Tl3nD9nA-EmMyH7Vq9Q8XLaBUF41vySdjxA305IRmK5E0gWamJsSfQ8_BXgfBPhgdJcKhvAiGJe0iIwrYMNA'
 headers = {
     'Authorization': f'Bearer {token}'
@@ -27,7 +31,7 @@ now = datetime.now()
 year = now.strftime("%Y")
 month = now.strftime("%m")
 
-base_dir = f"/home/platform-admin/valent/etl"
+base_dir = "/home/ubuntu/valent/etl"
 
 # Create directory path for year and month
 log_dir = f"{base_dir}/logs/{year}/{month}"
@@ -161,15 +165,13 @@ def _build_search_filter(key, value):
 def lambda_handler(event, context):
     sftp = setup_sftp_connection()
 
-    prefix_production_order = "production_order"
-    unsynced_po_files = get_unsynced_files(sftp, PO_DIR, prefix_production_order)
-    process_po_files(sftp, unsynced_po_files)
-    set_last_sync_time(datetime.now(), prefix_production_order)
+    # Process Production Order Files
+    po_files = get_all_files(sftp, PO_DIR)
+    process_po_files(sftp, po_files)
 
-    prefix_inventory = "inventory"
-    unsynced_inventory_files = get_unsynced_files(sftp, INVENTORY_DIR, "inventory")
-    process_inventory_files(sftp, unsynced_inventory_files)
-    set_last_sync_time(datetime.now(), prefix_inventory)
+    # Process Inventory Files
+    inventory_files = get_all_files(sftp, INVENTORY_DIR)
+    process_inventory_files(sftp, inventory_files)
 
     close_sftp_connection(sftp)
 
@@ -190,150 +192,169 @@ def close_sftp_connection(sftp):
     # sftp.get_transport().close()
 
 
-# Function to get the last sync time
-def get_last_sync_time(prefix: str):
-    try:
-        with open(f"{base_dir}/{prefix}_last_sync_time.txt", 'r') as f:
-            return datetime.fromisoformat(f.read().strip())
-    except FileNotFoundError:
-        return datetime.min
-
-
-# Function to set the last sync time
-def set_last_sync_time(sync_time, prefix: str):
-    with open(f"{base_dir}/{prefix}_last_sync_time.txt", 'w') as f:
-        f.write(sync_time.isoformat())
-
-
-# Function to get unsynced files
-def get_unsynced_files(sftp, directory: str, prefix: str):
+# Function to get all files in the directory
+def get_all_files(sftp, directory: str):
     files = sftp.listdir_attr(directory)
-    last_sync_time = get_last_sync_time(prefix)
-    unsynced_files = []
-
+    all_files_list = []
     for file in files:
-        file_time = datetime.fromtimestamp(file.st_mtime)
-        if file_time > last_sync_time:
-            unsynced_files.append(file.filename)
-    return unsynced_files
+        all_files_list.append(file.filename)
+    return all_files_list
+
+
+# Function to move Processed files to Processed PO's folder with up to 3 attempts and a 5-second pause between them
+def _move_processed_files(sftp, source_dir, filename, target_dir):
+    attempts = 0
+    max_attempts = 3
+
+    while attempts < max_attempts:
+        try:
+            source_path = os.path.join(source_dir, filename)
+            target_path = os.path.join(target_dir, filename)
+            sftp.rename(source_path, target_path)
+            _display(f"Successfully moved {filename} to {target_dir}")
+            break  # Exit the loop if successful
+        except Exception as e:
+            if 'RNTO-error' in str(e):
+                new_filename = f"rename_{time.time()}_{filename}"
+                sftp.rename(target_path, os.path.join(PROCESSED_FILES_DIR, source_dir, new_filename))
+                _display(
+                    f"Successfully rename {filename} to {new_filename} in {os.path.join(PROCESSED_FILES_DIR, source_dir, new_filename)}")
+            attempts += 1
+            _display(f"Attempt {attempts} failed to move {filename} to {target_dir}: {str(e)}")
+            if attempts < max_attempts:
+                time.sleep(5)  # Pause for 5 seconds before the next attempt
+
+    if attempts == max_attempts:
+        _display(f"Failed to move {filename} to {target_dir} after {max_attempts} attempts", True)
 
 
 # Function to process inventory files
 def process_inventory_files(sftp, filenames):
     _display(f"Starting to Process {len(filenames)} files: {filenames}", True)
     for filename in filenames:
-        existing_material_lots = _get_all_existing_material_lots()
-        to_be_processed_material_lots = dict()
-        _display("")
-        _display(f"------------------- Processing file: {filename} -------------------", True)
-        valid_extensions = {".xls", ".xlsx"}
-        is_valid_file_extension = os.path.splitext(filename)[1].lower() in valid_extensions
-        if not is_valid_file_extension:
-            _display(f"Skipping file {filename} due to invalid file extension.")
-            continue
-        file_path = f'{INVENTORY_DIR}/{filename}'
-        with sftp.open(file_path) as f:
-            temp = pd.read_excel(f)
-        content = temp.to_csv(sep='|', index=False)
-        lines = [line.split("|") for line in content.strip().split("\n")[1:]]
-        data = _extract_inventory_data(lines)
-        for material_code in data:
-            material = data[material_code]
-            material_code = material['material_code']
-            material_name = material['material_name']
-            material_obj = _process_material(material_code, material_name)
-            _display(f"Material: {material_code}")
-            lots = material['lots']
-            for lot in lots:
-                material_lot_obj = None
-                material_lot_number = lot['material_lot_number']
-                unrestricted_quantity = lot['unrestricted_quantity']
-                in_quality_inspection = lot['in_quality_inspection']
-                blocked = lot['blocked']
-                stk_in_transit = lot['stk_in_transit']
-                restricted_use = lot['restricted_use']
-                uom = lot['uom']
-                if material_lot_number:
-                    material_lot_obj = _process_material_lot(material_lot_number, material_name, unrestricted_quantity,
-                                                             in_quality_inspection, blocked, stk_in_transit,
-                                                             restricted_use, uom, material_obj)
-                    to_be_processed_material_lots[material_lot_number] = material_lot_obj
-                else:
-                    _display(f"ERROR: Cannot create Lot for line item, Material: {material}, Lot: {lot}", True)
-                _display(material_lot_obj)
-        to_be_archived_material_lot_ids = set(existing_material_lots.keys()) - set(to_be_processed_material_lots.keys())
-        for key in to_be_archived_material_lot_ids:
-            material_lot_id = existing_material_lots[key]
-            _display(f"Archiving Lot [{material_lot_number}] for material: {material_obj['externalId']}", True)
-            _archive_material_lot(material_lot_id)
+        try:
+            existing_material_lots = _get_all_existing_material_lots()
+            to_be_processed_material_lots = dict()
+            _display("")
+            _display(f"------------------- Processing file: {filename} -------------------", True)
+            valid_extensions = {".xls", ".xlsx"}
+            is_valid_file_extension = os.path.splitext(filename)[1].lower() in valid_extensions
+            if not is_valid_file_extension:
+                _display(f"Skipping file {filename} due to invalid file extension.")
+                continue
+            file_path = f'{INVENTORY_DIR}/{filename}'
+            with sftp.open(file_path) as f:
+                temp = pd.read_excel(f)
+            content = temp.to_csv(sep='|', index=False)
+            lines = [line.split("|") for line in content.strip().split("\n")[1:]]
+            data = _extract_inventory_data(lines)
+            for material_code in data:
+                material = data[material_code]
+                material_code = material['material_code']
+                material_name = material['material_name']
+                material_obj = _process_material(material_code, material_name)
+                _display(f"Material: {material_code}")
+                lots = material['lots']
+                for lot in lots:
+                    material_lot_obj = None
+                    material_lot_number = lot['material_lot_number']
+                    unrestricted_quantity = lot['unrestricted_quantity']
+                    in_quality_inspection = lot['in_quality_inspection']
+                    blocked = lot['blocked']
+                    stk_in_transit = lot['stk_in_transit']
+                    restricted_use = lot['restricted_use']
+                    uom = lot['uom']
+                    if material_lot_number:
+                        material_lot_obj = _process_material_lot(material_lot_number, material_name,
+                                                                 unrestricted_quantity,
+                                                                 in_quality_inspection, blocked, stk_in_transit,
+                                                                 restricted_use, uom, material_obj)
+                        to_be_processed_material_lots[material_lot_number] = material_lot_obj
+                    else:
+                        _display(f"ERROR: Cannot create Lot for line item, Material: {material}, Lot: {lot}", True)
+                    _display(material_lot_obj)
+            to_be_archived_material_lot_ids = set(existing_material_lots.keys()) - set(
+                to_be_processed_material_lots.keys())
+            for key in to_be_archived_material_lot_ids:
+                material_lot_id = existing_material_lots[key]
+                _display(f"Archiving Lot [{material_lot_number}] for material: {material_obj['externalId']}", True)
+                _archive_material_lot(material_lot_id)
+            _move_processed_files(sftp, INVENTORY_DIR, filename, PROCESSED_INVENTORY_DIR)
+        except Exception as e:
+            _display(f"""Error processing file {filename}: {str(e)}""", True)
 
 
 # Function to process PO files
 def process_po_files(sftp, filenames):
     _display(f"Starting to Process {len(filenames)} files: {filenames}", True)
     for filename in filenames:
-        _display("")
-        _display(f"------------------- Processing file: {filename} -------------------", True)
-        is_valid_file_extension = os.path.splitext(filename)[1].lower() == '.csv'
-        if not is_valid_file_extension:
-            _display(f"Skipping file {filename} due to invalid file extension.")
-            continue
-        file_path = f'{PO_DIR}/{filename}'
-        with sftp.open(file_path) as f:
-            content = f.read().decode('utf-8')
-        lines = [line.split("|") for line in content.strip().split("\n")]
-        # Extract data
-        data = _extract_po_data(lines)
-        header = data['header']
-        components = data['components']
-        code = header['code']
-        name = header['name']
-        is_semi_finished_product = code in sfp_codes
-        production_order_number = header['production_order_number']
-        scheduled_start = header['scheduled_start']
-        scheduled_end = header['scheduled_end']
-        batch_number = header['batch_number']
-        batch_target_quantity = header['batch_target_quantity']
-        batch_uom = header['uom']
-
-        header_product_obj = None
-        header_semi_finished_product_obj = None
-        if is_semi_finished_product:
-            header_semi_finished_product_obj = _process_semi_finished_product(code, name)
-            _display(f"Semi-finished Product: {code}")
-            _display(header_semi_finished_product_obj)
-        else:
-            header_product_obj = _process_product(code, name)
-            _display(f"Product: {code}")
-            _display(header_product_obj)
-
-        production_order_obj = _process_production_order(production_order_number, name, scheduled_start, scheduled_end,
-                                                         header_product_obj, header_semi_finished_product_obj)
-        _display(production_order_obj)
-
-        batch_obj = _process_batch(batch_number, name, batch_target_quantity, batch_uom, production_order_obj,
-                                   header_product_obj, header_semi_finished_product_obj)
-        _display(batch_obj)
-
-        for component in components:
-            _display(f"Component: {component['bom_code']}")
-            bom_code = component['bom_code']
-            code = component['code']
-            name = component['name']
-            target_quantity = component['target_quantity']
-            uom = component['uom']
-            material_obj = None
-            semi_finished_product_obj = None
+        try:
+            _display("")
+            _display(f"------------------- Processing file: {filename} -------------------", True)
+            is_valid_file_extension = os.path.splitext(filename)[1].lower() == '.csv'
+            if not is_valid_file_extension:
+                _display(f"Skipping file {filename} due to invalid file extension.")
+                continue
+            file_path = f'{PO_DIR}/{filename}'
+            with sftp.open(file_path) as f:
+                content = f.read().decode('utf-8')
+            lines = [line.split("|") for line in content.strip().split("\n")]
+            # Extract data
+            data = _extract_po_data(lines)
+            header = data['header']
+            components = data['components']
+            code = header['code']
+            name = header['name']
             is_semi_finished_product = code in sfp_codes
+            production_order_number = header['production_order_number']
+            scheduled_start = header['scheduled_start']
+            scheduled_end = header['scheduled_end']
+            batch_number = header['batch_number']
+            batch_target_quantity = header['batch_target_quantity']
+            batch_uom = header['uom']
+
+            header_product_obj = None
+            header_semi_finished_product_obj = None
             if is_semi_finished_product:
-                semi_finished_product_obj = _process_semi_finished_product(code, name)
-                _display(semi_finished_product_obj)
+                header_semi_finished_product_obj = _process_semi_finished_product(code, name)
+                _display(f"Semi-finished Product: {code}")
+                _display(header_semi_finished_product_obj)
             else:
-                material_obj = _process_material(code, name)
-                _display(material_obj)
-            bom_material_obj = _process_bom_material(name, bom_code, target_quantity, uom, production_order_obj,
-                                                     material_obj, semi_finished_product_obj)
-            _display(bom_material_obj)
+                header_product_obj = _process_product(code, name)
+                _display(f"Product: {code}")
+                _display(header_product_obj)
+
+            production_order_obj = _process_production_order(production_order_number, name, scheduled_start,
+                                                             scheduled_end,
+                                                             header_product_obj, header_semi_finished_product_obj)
+            _display(production_order_obj)
+
+            batch_obj = _process_batch(batch_number, name, batch_target_quantity, batch_uom, production_order_obj,
+                                       header_product_obj, header_semi_finished_product_obj)
+            _display(batch_obj)
+
+            for component in components:
+                _display(f"Component: {component['bom_code']}")
+                bom_code = component['bom_code']
+                code = component['code']
+                name = component['name']
+                target_quantity = component['target_quantity']
+                uom = component['uom']
+                material_obj = None
+                semi_finished_product_obj = None
+                is_semi_finished_product = code in sfp_codes
+                if is_semi_finished_product:
+                    semi_finished_product_obj = _process_semi_finished_product(code, name)
+                    _display(semi_finished_product_obj)
+                else:
+                    material_obj = _process_material(code, name)
+                    _display(material_obj)
+                bom_material_obj = _process_bom_material(name, bom_code, target_quantity, uom, production_order_obj,
+                                                         material_obj, semi_finished_product_obj)
+                _display(bom_material_obj)
+            _move_processed_files(sftp, PO_DIR, filename, PROCESSED_PO_DIR)
+        except Exception as e:
+            _display(f"""Error processing file {filename}: {str(e)}""", True)
 
 
 # Function to get epoch
@@ -357,8 +378,10 @@ def _extract_po_data(lines):
             code = header_data[2] if len(header_data) > 1 else None
             name = header_data[3] if len(header_data) > 1 else None
             production_order_number = header_data[1] if len(header_data) > 1 else None
-            scheduled_start = str(_get_epoch(header_data[9])) if len(header_data) > 1 else None
-            scheduled_end = str(_get_epoch(header_data[10])) if len(header_data) > 1 else None
+            scheduled_start = str(_get_epoch(header_data[9].replace(",", "").replace("\r", "").strip())) if len(
+                header_data) > 1 else None
+            scheduled_end = str(_get_epoch(header_data[10].replace(",", "").replace("\r", "").strip())) if len(
+                header_data) > 1 else None
             batch_number = header_data[8] if len(header_data) > 1 else None
             batch_target_quantity = header_data[6] if len(header_data) > 1 else None
             uom = header_data[7] if len(header_data) > 1 else None
@@ -736,7 +759,6 @@ def _create_material_lot(material_lot_number, material_name, unrestricted_quanti
 
 def _update_material_lot(material_lot_obj, material_lot_number, material_name, unrestricted_quantity,
                          in_quality_inspection, blocked, stk_in_transit, restricted_use, uom, material_obj):
-    # material_lot_obj = None
     material_lot_obj = _get_particular_material_lot(material_lot_obj['id'])
     material_lot_url = f"{url}/{material_lot_obj['id']}"
     relations = material_lot_obj['relations']
