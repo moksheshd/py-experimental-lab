@@ -327,10 +327,12 @@ def process_po_files(sftp, filenames):
             production_order_obj = _process_production_order(production_order_number, name, scheduled_start,
                                                              scheduled_end,
                                                              header_product_obj, header_semi_finished_product_obj)
+            _display(f"Production Order: {production_order_number}")
             _display(production_order_obj)
 
             batch_obj = _process_batch(batch_number, name, batch_target_quantity, batch_uom, production_order_obj,
                                        header_product_obj, header_semi_finished_product_obj)
+            _display(f"Batch: {batch_number}")
             _display(batch_obj)
 
             for component in components:
@@ -443,8 +445,7 @@ def _get_product(product_code):
         if len(data):
             product_obj = data[0]
     else:
-        print('Error:', response.status_code)
-        print('Error:', response.text)
+        _display(f"Error processing url: {product_url}, response.status_code: {response.status_code}, response.text: {response.text}")
     return product_obj
 
 
@@ -457,7 +458,8 @@ def _create_product(product_code, product_name):
         'properties': {
             key_mappings['product']['property']['product_code']: product_code,
             key_mappings['product']['property']['product_name']: product_name
-        }
+        },
+        'reason': 'Leucine Bot created this object based on the most recent file received from SAP.'
     }
     response = requests.post(product_url, json=data, headers=headers)
     if response.status_code == 200:
@@ -471,8 +473,7 @@ def _create_product(product_code, product_name):
                 'displayName': data['displayName']
             }
     else:
-        print('Error:', response.status_code)
-        print('Error:', response.text)
+        _display(f"Error processing url: {product_url}, data: {data}, response.status_code: {response.status_code}, response.text: {response.text}")
     return product_obj
 
 
@@ -503,7 +504,7 @@ def _get_production_order(production_order_number):
         if len(data):
             production_order_obj = data[0]
     else:
-        print('Error:', response.status_code)
+        _display(f"Error processing url: {production_order_url}, response.status_code: {response.status_code}, response.text: {response.text}")
     return production_order_obj
 
 
@@ -524,7 +525,8 @@ def _create_production_order(production_order_number, name, scheduled_start, sch
             key_mappings['production_order']['relation']['product']: [product_obj] if product_obj is not None else None,
             key_mappings['production_order']['relation']['semi_finished_product']: [
                 semi_finished_product_obj] if semi_finished_product_obj is not None else None
-        }
+        },
+        'reason': 'Leucine Bot created this object based on the most recent file received from SAP.'
     }
     response = requests.post(production_order_url, json=data, headers=headers)
     if response.status_code == 200:
@@ -538,8 +540,7 @@ def _create_production_order(production_order_number, name, scheduled_start, sch
                 'displayName': data['displayName']
             }
     else:
-        print('Error:', response.status_code)
-        print('Error:', response.text)
+        _display(f"Error processing url: {production_order_url}, data: {data}, response.status_code: {response.status_code}, response.text: {response.text}")
     return production_order_obj
 
 
@@ -570,7 +571,7 @@ def _get_batch(batch_number):
         if len(data):
             batch_obj = data[0]
     else:
-        print('Error:', response.status_code)
+        _display(f"Error processing url: {batch_url}, response.status_code: {response.status_code}, response.text: {response.text}")
     return batch_obj
 
 
@@ -594,7 +595,8 @@ def _create_batch(batch_number, product_name, batch_target_quantity, batch_uom, 
             key_mappings['batch']['relation']['product']: [product_obj] if product_obj is not None else None,
             key_mappings['batch']['relation']['semi_finished_product']: [
                 semi_finished_product_obj] if semi_finished_product_obj is not None else None
-        }
+        },
+        'reason': 'Leucine Bot created this object based on the most recent file received from SAP.'
     }
     response = requests.post(batch_url, json=data, headers=headers)
     if response.status_code == 200:
@@ -608,8 +610,7 @@ def _create_batch(batch_number, product_name, batch_target_quantity, batch_uom, 
                 'displayName': data['displayName']
             }
     else:
-        print('Error:', response.status_code)
-        print('Error:', response.text)
+        _display(f"Error processing url: {batch_url}, data: {data}, data: {data}, response.status_code: {response.status_code}, response.text: {response.text}")
     return batch_obj
 
 
@@ -636,8 +637,7 @@ def _get_material(material_code):
         if len(data):
             material_obj = data[0]
     else:
-        print('Error:', response.status_code)
-        print('Error:', response.text)
+        _display(f"Error processing url: {material_url}, response.status_code: {response.status_code}, response.text: {response.text}")
     return material_obj
 
 
@@ -649,7 +649,8 @@ def _create_material(material_code, material_name):
         'properties': {
             key_mappings['material']['property']['material_code']: material_code,
             key_mappings['material']['property']['material_name']: material_name
-        }
+        },
+        'reason': 'Leucine Bot created this object based on the most recent file received from SAP.'
     }
     response = requests.post(material_url, json=data, headers=headers)
     if response.status_code == 200:
@@ -663,8 +664,7 @@ def _create_material(material_code, material_name):
                 'displayName': data['displayName']
             }
     else:
-        print('Error:', response.status_code)
-        print('Error:', response.text)
+        _display(f"Error processing url: {material_url}, data: {data}, response.status_code: {response.status_code}, response.text: {response.text}")
     return material_obj
 
 
@@ -700,8 +700,7 @@ def _get_material_lot(material_lot_number):
         if len(data):
             material_lot_obj = data[0]
     else:
-        print('Error:', response.status_code)
-        print('Error:', response)
+        _display(f"Error processing url: {material_lot_url}, response.status_code: {response.status_code}, response.text: {response.text}")
     return material_lot_obj
 
 
@@ -715,8 +714,7 @@ def _get_particular_material_lot(material_lot_id):
         if data:
             material_lot_obj = data
     else:
-        print('Error:', response.status_code)
-        print('Error:', response)
+        _display(f"Error processing url: {material_lot_url}, response.status_code: {response.status_code}, response.text: {response.text}")
     return material_lot_obj
 
 
@@ -738,7 +736,8 @@ def _create_material_lot(material_lot_number, material_name, unrestricted_quanti
         },
         'relations': {
             key_mappings['material_lot']['relation']['material']: [material_obj]
-        }
+        },
+        'reason': 'Leucine Bot created this object based on the most recent file received from SAP.'
     }
     response = requests.post(material_lot_url, json=data, headers=headers)
     if response.status_code == 200:
@@ -752,8 +751,7 @@ def _create_material_lot(material_lot_number, material_name, unrestricted_quanti
                 'displayName': data['displayName']
             }
     else:
-        print('Error:', response.status_code)
-        print('Error:', response)
+        _display(f"Error processing url: {material_lot_url}, data: {data}, response.status_code: {response.status_code}, response.text: {response.text}")
     return material_lot_obj
 
 
@@ -796,7 +794,8 @@ def _update_material_lot(material_lot_obj, material_lot_number, material_name, u
         },
         'relations': {
             key_mappings['material_lot']['relation']['material']: [material_obj]
-        }
+        },
+        'reason': 'Leucine Bot updated this object based on the most recent file received from SAP.'
     }
     response = requests.patch(material_lot_url, json=data, headers=headers)
     if response.status_code == 200:
@@ -810,8 +809,7 @@ def _update_material_lot(material_lot_obj, material_lot_number, material_name, u
                 'displayName': data['displayName']
             }
     else:
-        print('Error:', response.status_code)
-        print('Error:', response.content)
+        _display(f"Error processing url: {material_lot_url}, data: {data}, response.status_code: {response.status_code}, response.text: {response.text}")
     return material_lot_obj
 
 
@@ -819,8 +817,8 @@ def _archive_material_lot(material_lot_id):
     material_lot_obj = None
     material_lot_url = f"{url}/{material_lot_id}/archive"
     data = {
-        "collectionName": key_mappings['material_lot']['collection'],
-        "reason": "Leucine Bot archived this object basis the latest inventory file received from SAP"
+        'collectionName': key_mappings['material_lot']['collection'],
+        'reason': 'Leucine Bot archived this object based on the most recent inventory file received from SAP.'
     }
     response = requests.patch(material_lot_url, json=data, headers=headers)
     if response.status_code == 200:
@@ -829,8 +827,7 @@ def _archive_material_lot(material_lot_id):
         if data:
             material_lot_obj = data
     else:
-        print('Error:', response.status_code)
-        print('Error:', response)
+        _display(f"Error processing url: {material_lot_url}, data: {data}, response.status_code: {response.status_code}, response.text: {response.text}")
     return material_lot_obj
 
 
@@ -858,8 +855,7 @@ def _get_semi_finished_product(semi_finished_product_code):
         if len(data):
             semi_finished_product_obj = data[0]
     else:
-        print('Error:', response.status_code)
-        print('Error:', response.text)
+        _display(f"Error processing url: {semi_finished_product_url}, response.status_code: {response.status_code}, response.text: {response.text}")
     return semi_finished_product_obj
 
 
@@ -871,7 +867,8 @@ def _create_semi_finished_product(semi_finished_product_code, semi_finished_prod
         'properties': {
             key_mappings['semi_finished_product']['property']['semi_finished_product_code']: semi_finished_product_code,
             key_mappings['semi_finished_product']['property']['semi_finished_product_name']: semi_finished_product_name
-        }
+        },
+        'reason': 'Leucine Bot created this object based on the most recent file received from SAP.'
     }
     response = requests.post(semi_finished_product_url, json=data, headers=headers)
     if response.status_code == 200:
@@ -885,8 +882,7 @@ def _create_semi_finished_product(semi_finished_product_code, semi_finished_prod
                 'displayName': data['displayName']
             }
     else:
-        print('Error:', response.status_code)
-        print('Error:', response.text)
+        _display(f"Error processing url: {semi_finished_product_url}, data: {data}, response.status_code: {response.status_code}, response.text: {response.text}")
     return semi_finished_product_obj
 
 
@@ -915,7 +911,7 @@ def _get_bom_material(bom_code):
         if len(data):
             bom_material_obj = data[0]
     else:
-        print('Error:', response.status_code)
+        _display(f"Error processing url: {bom_material_url}, response.status_code: {response.status_code}, response.text: {response.text}")
     return bom_material_obj
 
 
@@ -936,7 +932,8 @@ def _create_bom_material(material_name, bom_code, target_quantity, uom, producti
             key_mappings['bom_material']['relation']['material']: [material_obj] if material_obj is not None else None,
             key_mappings['bom_material']['relation']['semi_finished_product']: [
                 semi_finished_product_obj] if semi_finished_product_obj is not None else None
-        }
+        },
+        'reason': 'Leucine Bot created this object based on the most recent file received from SAP.'
     }
     response = requests.post(bom_material_url, json=data, headers=headers)
     if response.status_code == 200:
@@ -950,8 +947,7 @@ def _create_bom_material(material_name, bom_code, target_quantity, uom, producti
                 'displayName': data['displayName']
             }
     else:
-        print('Error:', response.status_code)
-        print('Error:', response.text)
+        _display(f"Error processing url: {bom_material_url}, data: {data}, response.status_code: {response.status_code}, response.text: {response.text}")
     return bom_material_obj
 
 
