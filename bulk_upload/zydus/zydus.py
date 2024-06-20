@@ -89,7 +89,7 @@ def _build_search_filter(key, value):
 def lambda_handler(event, context):
     # process_product_files("/home/moksh/misc/temp/kvk/product.xlsx")
     # process_room_files("/home/moksh/misc/temp/kvk/room.xlsx")
-    process_equipment_files("/home/moksh/misc/temp/zydus/equipment.xlsx")
+    process_equipment_files("/home/moksh/misc/temp/zydus/assets.xlsx")
 
 
 def _get_epoch(date_str, format='%m/%d/%Y'):
