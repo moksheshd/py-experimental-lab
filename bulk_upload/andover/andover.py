@@ -90,7 +90,6 @@ def process_assets_files(file_path):
             content = pd.read_excel(f)
     for index, row in content.iterrows():
         print(row)
-        print("--------------------------")
         serial_number = str(row['serial_number']).strip() if pd.notna(row['serial_number']) else ''
         asset_name = str(row['asset_name']).strip() if pd.notna(row['asset_name']) else ''
         legacy_number = str(row['legacy_number']).strip() if pd.notna(row['legacy_number']) else ''
@@ -103,7 +102,7 @@ def process_assets_files(file_path):
         )
         manufacturer = str(row['manufacturer']).strip() if pd.notna(row['manufacturer']) else ''
         model = str(row['model']).strip() if pd.notna(row['model']) else ''
-        _process_asset(asset_name, serial_number, legacy_number, next_due_date, manufacturer, model)
+        _process_asset(serial_number, asset_name, legacy_number, next_due_date, manufacturer, model)
     print(content)
 
 
