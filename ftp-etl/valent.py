@@ -41,7 +41,7 @@ if not os.path.exists(log_dir):
     os.makedirs(log_dir)
 
 # Set log filename with daily date
-log_filename = now.strftime(f"{log_dir}/sap-sftp-etl-logs-%Y-%m-%d.txt")
+log_filename = now.strftime(f"{log_dir}/sap-sftp-etl-logs-%Y-%m-%d.log")
 
 # Set up logging
 logging.basicConfig(filename=log_filename, level=logging.INFO, format='%(asctime)s %(message)s')
